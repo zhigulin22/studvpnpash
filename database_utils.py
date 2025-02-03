@@ -1,223 +1,139 @@
 import sqlite3
-from datetime import datetime
-import uuid
+from datetime import datetime,timedelta
 
-DATABASE_NAME = "vpn_keys.db"
+file_name = 'vpn_keys.db'
 
+# Функция для преобразования datetime в ISO-8601 строку
+def adapt_datetime(dt):
+    return dt.isoformat()
 
-def create_connection():
-    """Создает соединение с базой данных."""
-    conn = None
+# Функция для преобразования ISO-8601 строки в datetime
+def convert_datetime(iso_str):
+    return datetime.fromisoformat(iso_str)
+
+def format_subscription_end_time(subscription_end_time):
+    if subscription_end_time:
+        return subscription_end_time.strftime("%d %B %Y") # Форматирование: день месяц год
+    else:
+        return None
+
+# Инициализация базы данных
+def init_db():
+    conn = sqlite3.connect(file_name)
+    conn.create_function("convert_datetime", 1, convert_datetime)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            telegram_id INTEGER PRIMARY KEY,
+            uuid TEXT,
+            referral_count INTEGER DEFAULT 0,
+            is_paid BOOLEAN DEFAULT FALSE,
+            subscription_end_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        )
+    """)
+    conn.commit()
+    conn.close()
+    sqlite3.register_adapter(datetime, adapt_datetime)
+
+# Добавление нового пользователя
+def add_user(telegram_id, uuid):
+    conn = sqlite3.connect(file_name)
+    cursor = conn.cursor()
     try:
-        conn = sqlite3.connect(DATABASE_NAME)
-        return conn
-    except sqlite3.Error as e:
-        print(f"Error connecting to database: {e}")
-    return conn
+        cursor.execute("INSERT INTO users (telegram_id, uuid) VALUES (?, ?)", (telegram_id, uuid))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+       conn.close()
 
+# Получение пользователя по telegram_id
+def get_user(telegram_id):
+    conn = sqlite3.connect(file_name)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE telegram_id = ?", (telegram_id,))
+    user = cursor.fetchone()
+    conn.close()
+    if user:
+        return {
+            "telegram_id": user[0],
+            "uuid": user[1],
+            "referral_count": user[2],
+            "is_paid": user[3],
+            "subscription_end_time": convert_datetime(user[4]) if user[4] else None
+        }
+    return None
 
-def create_table():
-    """Создает таблицу, если она не существует."""
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS vpn_users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    telegram_username TEXT NOT NULL UNIQUE,
-                    vpn_key_uuid TEXT NOT NULL UNIQUE,
-                    referral_uuid TEXT,
-                    is_subscribed INTEGER DEFAULT 0,
-                    subscription_start_date DATETIME,
-                    registration_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    referral_link_received_date DATETIME
-                );
-            """)
-            conn.commit()
-            print("Table 'vpn_users' created successfully")
-        except sqlite3.Error as e:
-            print(f"Error creating table: {e}")
-        finally:
-            conn.close()
+# Обновление uuid пользователя
+def update_user_uuid(telegram_id, uuid):
+    conn = sqlite3.connect(file_name)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET uuid = ? WHERE telegram_id = ?", (uuid, telegram_id))
+    conn.commit()
+    conn.close()
 
+# Обновление статуса оплаты пользователя
+def update_user_payment_status(telegram_id, is_paid):
+    conn = sqlite3.connect(file_name)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET is_paid = ? WHERE telegram_id = ?", (is_paid, telegram_id))
+    conn.commit()
+    conn.close()
 
-def add_user(telegram_username, vpn_key_uuid, referral_uuid=None, referral_link_received_date=None):
-    """Добавляет нового пользователя в базу данных."""
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO vpn_users (telegram_username, vpn_key_uuid, referral_uuid, referral_link_received_date)
-                VALUES (?, ?, ?, ?)
-            """, (telegram_username, vpn_key_uuid, referral_uuid, referral_link_received_date))
-            conn.commit()
-            print(f"User {telegram_username} with key {vpn_key_uuid} added successfully.")
-            return True
-        except sqlite3.IntegrityError as e:
-            print(f"Error adding user: Username or key already exists: {e}")
-            return False
-        except sqlite3.Error as e:
-            print(f"Error adding user: {e}")
-            return False
-        finally:
-            conn.close()
+# Обновление количества приглашенных пользователей
+def update_user_referral_count(telegram_id, referral_count):
+    conn = sqlite3.connect(file_name)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET referral_count = ? WHERE telegram_id = ?", (referral_count, telegram_id))
+    conn.commit()
+    conn.close()
 
+def delete_user(telegram_id):
+    conn = sqlite3.connect(file_name)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM users WHERE telegram_id = ?", (telegram_id,))
+        conn.commit()
+        return True  # Успешное удаление
+    except Exception as e:
+        conn.rollback() # Отмена транзакции в случае ошибки
+        return False  # Ошибка удаления
+    finally:
+        conn.close()
 
-def get_user_by_username(telegram_username):
-    """Получает информацию о пользователе по имени."""
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM vpn_users WHERE telegram_username = ?", (telegram_username,))
-            user_data = cursor.fetchone()
-            return user_data
-        except sqlite3.Error as e:
-            print(f"Error getting user by username: {e}")
-            return None
-        finally:
-            conn.close()
+# Обновление времени окончания подписки
+def update_user_subscription_end_time(telegram_id, subscription_end_time):
+    conn = sqlite3.connect(file_name)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET subscription_end_time = ? WHERE telegram_id = ?", (subscription_end_time, telegram_id))
+    conn.commit()
+    conn.close()
 
+# Функция для получения всех пользователей
+def get_all_users():
+    conn = sqlite3.connect(file_name)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+    conn.close()
+    return [
+      {
+        "telegram_id": user[0],
+        "uuid": user[1],
+        "referral_count": user[2],
+        "is_paid": user[3],
+        "subscription_end_time": convert_datetime(user[4]) if user[4] else None
+      }
+      for user in users
+    ]
 
-def get_user_by_uuid(vpn_key_uuid):
-    """Получает информацию о пользователе по UUID ключа."""
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM vpn_users WHERE vpn_key_uuid = ?", (vpn_key_uuid,))
-            user_data = cursor.fetchone()
-            return user_data
-        except sqlite3.Error as e:
-            print(f"Error getting user by uuid: {e}")
-            return None
-        finally:
-            conn.close()
-
-
-def update_user_subscription(telegram_username, is_subscribed=1):
-    """Обновляет статус подписки пользователя."""
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE vpn_users
-                SET is_subscribed = ?, subscription_start_date = ?
-                WHERE telegram_username = ?
-            """, (is_subscribed, datetime.now(), telegram_username))
-            conn.commit()
-            if cursor.rowcount > 0:
-                print(f"Subscription status updated for {telegram_username}. Is subscribed: {is_subscribed}")
-                return True
-            else:
-                print(f"User {telegram_username} not found.")
-                return False
-        except sqlite3.Error as e:
-            print(f"Error updating subscription status: {e}")
-            return False
-        finally:
-            conn.close()
-
-
-def delete_user_by_username(telegram_username):
-    """Удаляет пользователя из базы данных по имени."""
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM vpn_users WHERE telegram_username = ?", (telegram_username,))
-            conn.commit()
-            if cursor.rowcount > 0:
-                print(f"User {telegram_username} deleted successfully.")
-                return True
-            else:
-                print(f"User {telegram_username} not found")
-                return False
-        except sqlite3.Error as e:
-            print(f"Error deleting user: {e}")
-            return False
-        finally:
-            conn.close()
-
-
-def delete_user_by_uuid(vpn_key_uuid):
-    """Удаляет пользователя из базы данных по UUID ключа."""
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM vpn_users WHERE vpn_key_uuid = ?", (vpn_key_uuid,))
-            conn.commit()
-            if cursor.rowcount > 0:
-                print(f"User with key {vpn_key_uuid} deleted successfully.")
-                return True
-            else:
-                print(f"User with key {vpn_key_uuid} not found")
-                return False
-        except sqlite3.Error as e:
-            print(f"Error deleting user: {e}")
-            return False
-        finally:
-            conn.close()
-
-
-def generate_referral_link(bot_username, referral_uuid):
-    """Генерирует реферальную ссылку для пользователя."""
-    return f"t.me/{bot_username}?start={referral_uuid}"
-
-
-def get_user_by_referral_uuid(referral_uuid):
-    """Получает информацию о пользователе по referral_uuid."""
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM vpn_users WHERE referral_uuid = ?", (referral_uuid,))
-            user_data = cursor.fetchone()
-            return user_data
-        except sqlite3.Error as e:
-            print(f"Error getting user by referral_uuid: {e}")
-            return None
-        finally:
-            conn.close()
-
-
-if __name__ == '__main__':
-    create_table()  # Создаем таблицу, если ее нет
-
+if __name__ == "__main__":
     # Пример использования
-    bot_username = "YourBotName"
+    #init_db()
 
-    # 1. Создаем пользователя, который будет реферером
-    referral_user_uuid = str(uuid.uuid4())
-    add_user("referrer_user", referral_user_uuid)
-    # 2. Генерируем ссылку для реферера
-    referral_link = generate_referral_link(bot_username, referral_user_uuid)
-    print(f"Generated referral link: {referral_link}")
-
-    # 3. Добавляем нового пользователя, который перешел по ссылке
-    new_user_username = "new_user"
-    new_user_uuid = str(uuid.uuid4())
-    referral_link_received_date = datetime.now()
-    add_user(new_user_username, new_user_uuid, referral_user_uuid, referral_link_received_date)
-
-    # 4. Получаем информацию о пользователе по его юзернейму
-    user_info = get_user_by_username(new_user_username)
-    print(f"User info after link: {user_info}")
-
-    # 5. Получаем информацию о реферере
-    referrer_info = get_user_by_referral_uuid(referral_user_uuid)
-    print(f"Referral info: {referrer_info}")
-
-    # 6. Обновляем статус подписки пользователя
-    update_user_subscription(new_user_username, 1)
-
-    # 7. Получаем информацию о пользователе после обновления подписки
-    user_info_after_subscription = get_user_by_username(new_user_username)
-    print(f"User info after subscription: {user_info_after_subscription}")
-
-    delete_user_by_username("referrer_user")
-    delete_user_by_username("new_user")
+    # Добавляем нового пользователя
+    #delete_user(5510185795)
+    all_users = get_all_users()
+    print("Все пользователи:")
+    for user in all_users:
+        print(user)
