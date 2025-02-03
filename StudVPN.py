@@ -14,7 +14,7 @@ SERVER_PASSWORD = 'HX6qP0WlYzox'
 CONFIG_FILE_PATH = '/usr/local/etc/xray/config.json'
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
-
+clients={}
 
 def generate_vless_link(user_id):
     user_uuid = str(uuid.uuid4())
@@ -51,7 +51,6 @@ def update_server_config(new_uuid,user_id):
             for inbound in config['inbounds']:
                 if 'settings' in inbound and 'clients' in inbound['settings']:
                         for client in inbound['settings']['clients']:
-                            if inbound['settings']['clients'][client]['id']==cur_uuid:
                                 inbound['settings']['clients'][client]['id']=new_uuid
                                 break
 
