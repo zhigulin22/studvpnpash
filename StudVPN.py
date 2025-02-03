@@ -90,10 +90,21 @@ def update_server_config(new_uuid,user_id):
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    welcome_message = (
+        "🚀 Безопасный и быстрый VPN у вас под рукой! 🔒\n\n"
+        "Забудьте о блокировках и ограничениях. Наш бот предоставит вам надежный VPN-сервис для безопасного и анонимного доступа в интернет.\n\n"
+        "➡️ Начните использовать VPN прямо сейчас, нажав на кнопку ниже!\n\n"
+        "🛡️ Анонимность | ⚡ Скорость | 🌎 Доступность\n\n"
+        "*   Конфиденциальность ваших данных\n"
+        "*   Обход блокировок и ограничений\n"
+        "*   Защита в публичных Wi-Fi сетях"
+    )
+
+    bot.send_message(message.chat.id, welcome_message)
     user_id = message.from_user.id  # Получаем user_id
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add("Купить VPN", "Мой VPN", "Реферальная программа", "Поддержка", "О нас/FAQ")
-    bot.send_message(message.chat.id, "Добро пожаловать!", reply_markup=markup)
+    bot.send_message(message.chat.id, welcome_message, reply_markup=markup)
 
 
 
@@ -112,6 +123,7 @@ def choose_subscription_duration(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add("1 месяц - 99₽", "3 месяца - 259₽", "6 месяцев - 499₽", "12 месяцев - 999₽", "Назад")
     bot.send_message(message.chat.id, f"Вы выбрали {device}. Выберите срок подписки:", reply_markup=markup)
+
 
 #Обработчик команды "Назад"
 @bot.message_handler(func=lambda message: message.text == "Назад")
