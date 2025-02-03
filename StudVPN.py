@@ -18,8 +18,7 @@ clients = {}
 
 def generate_vless_link(user_id):
     user_uuid = str(uuid.uuid4())
-    vless_link = (f"vless://{user_uuid}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=6zedx9tc-YP4Lyh8xFp6LtEv"
-                  f"vmCB9iAtoNNc3tt5Ons&sni=whatsapp.com&sid=916e9946&spx=%2F&email={user_id}#StudVPN")
+    vless_link = f"vless://{user_uuid}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=6zedx9tc-YP4Lyh8xFp6LtEvvmCB9iAtoNNc3tt5Ons&sni=whatsapp.com&sid=916e9946&spx=%2F&email={user_id}#StudVPN"
 
     # Обновление конфигурации на сервере
     update_server_config(user_uuid,user_id)
@@ -94,7 +93,7 @@ def start(message):
     user_id = message.from_user.id  # Получаем user_id
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add("Купить VPN", "Мой VPN", "Реферальная программа", "Поддержка", "О нас/FAQ")
-    bot.send_message(message.chat.id, "Добро пожаловать! Выберите опцию:", reply_markup=markup)
+    bot.send_message(message.chat.id, "Добро пожаловать!", reply_markup=markup)
 
 
 
@@ -102,10 +101,17 @@ def start(message):
 @bot.message_handler(func=lambda message: message.text == "Купить VPN")
 def buy_vpn(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add("Тарифные планы", "Назад")
-    bot.send_message(message.chat.id, "Выберите тарифный план:", reply_markup=markup)
+    markup.add("Iphone", "Android", "MacBook", "Windows" "Главное меню")
+    bot.send_message(message.chat.id, "Выберите устройство, для которого хотите купить ВПН:", reply_markup=markup)
 
 
+
+@bot.message_handler(func=lambda message: message.text in ["iPhone", "Android", "Mac", "Windows"])
+def choose_subscription_duration(message):
+    device = message.text
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add("1 месяц - 99₽", "3 месяца - 259₽", "6 месяцев - 499₽", "12 месяцев - 999₽", "Назад")
+    bot.send_message(message.chat.id, f"Вы выбрали {device}. Выберите срок подписки:", reply_markup=markup)
 
 #Обработчик команды "Назад"
 @bot.message_handler(func=lambda message: message.text == "Назад")
@@ -113,6 +119,8 @@ def back_to_main_menu(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add("Купить VPN", "Мой VPN", "Реферальная программа", "Поддержка", "О нас/FAQ")
     bot.send_message(message.chat.id, "Вы вернулись в главное меню.", reply_markup=markup)
+
+
 
 #Мой ВПН, надо подключить SQL чтоб нормально читать пользователей
 @bot.message_handler(func=lambda message: message.text == "Мой VPN")
@@ -122,7 +130,7 @@ def my_vpn(message):
         current_uuid = clients[user_id]
         bot.send_message(message.chat.id, f"Ваш текущий тарифный план: {current_uuid}")
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("Продлить подписку", "Инструкции по настройке", "Назад")
+        markup.add("Продлить подписку", "Инструкции по настройке", "Главное меню")
         bot.send_message(message.chat.id, "Выберите действие:", reply_markup=markup)
     else:
         bot.send_message(message.chat.id, "У вас нет активной подписки.")
@@ -132,8 +140,8 @@ def my_vpn(message):
 #Реферальная ссылка
 @bot.message_handler(func=lambda message: message.text == "Реферальная программа")
 def referral_program(message):
-    user_id = message.from_user.id
-    referral_link = f"https://StudVPN/referral/{user_id}"
+    user_name = message.from_user.username
+    referral_link = f"https://t.me/studvpn666_bot?start={user_name}"
     bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {referral_link}")
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add("Статистика рефералов", "Назад")
