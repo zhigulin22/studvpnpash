@@ -1,7 +1,7 @@
 import telebot
 import uuid
 import json
-import paramiko
+import paramik
 from telebot import types
 
 # Настройки вашего бота
