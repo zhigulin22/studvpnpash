@@ -3,7 +3,7 @@ import datetime
 import uuid
 import os  # Import the 'os' module
 
-DATABASE_FILE = "vpn_keys.db"
+DATABASE_FILE = "user_data.db"
 DEVICE_LIMIT = 4  # Maximum number of devices per user
 ALLOWED_DEVICE_TYPES = ["iPhone", "Mac", "Android", "Windows"]
 
@@ -21,52 +21,41 @@ def convert_datetime(date_string):
     return None
 
 
-def format_subscription_end_time(subscription_end_time):
-    if subscription_end_time:
-        try:
-            # Convert string to datetime object
-            subscription_datetime = datetime.datetime.fromisoformat(subscription_end_time)
-
-            # Format the datetime object to the desired string format
-            formatted_time = subscription_datetime.strftime("%d %B %Y")
-            return formatted_time
-        except ValueError:
-            print(f"Error: Could not parse date string '{subscription_end_time}'. Returning None.")
-            return None
-
-
 def create_database():
     """Creates the database and tables."""
     conn = None
     try:
         # Delete the database file if it exists
-        if not os.path.exists(DATABASE_FILE):
+        if os.path.exists(DATABASE_FILE):
+            os.remove(DATABASE_FILE)
+            print(f"Existing database file '{DATABASE_FILE}' deleted.")
 
-            conn = sqlite3.connect(DATABASE_FILE)
-            conn.create_function("convert_datetime", 1, convert_datetime)
-            cursor = conn.cursor()
+        conn = sqlite3.connect(DATABASE_FILE)
+        conn.create_function("convert_datetime", 1, convert_datetime)
+        cursor = conn.cursor()
 
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS user_referrals (
-                    telegram_id INTEGER PRIMARY KEY,
-                    referral_count INTEGER DEFAULT 0
-                )
-            """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_referrals (
+                telegram_id INTEGER PRIMARY KEY,
+                referral_count INTEGER DEFAULT 0
+            )
+        """)
 
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS user_devices (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    telegram_id INTEGER,
-                    device_uuid TEXT UNIQUE,
-                    device_index INTEGER,  -- 1 to 4 to represent each device
-                    device_type TEXT,       -- Device type (iPhone, Mac, Android, Windows)
-                    is_paid BOOLEAN DEFAULT FALSE,
-                    subscription_end_time TEXT,
-                    FOREIGN KEY (telegram_id) REFERENCES user_referrals(telegram_id),
-                    UNIQUE (telegram_id, device_index)  -- Ensure only one device per index
-                )
-            """)
-            conn.commit()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_devices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                telegram_id INTEGER,
+                device_uuid TEXT UNIQUE,
+                device_index INTEGER,  -- 1 to 4 to represent each device
+                device_type TEXT,       -- Device type (iPhone, Mac, Android, Windows)
+                is_paid BOOLEAN DEFAULT FALSE,
+                subscription_end_time TEXT,
+                FOREIGN KEY (telegram_id) REFERENCES user_referrals(telegram_id),
+                UNIQUE (telegram_id, device_index)  -- Ensure only one device per index
+            )
+        """)
+        conn.commit()
+        print("Database and tables created successfully.")
     except sqlite3.Error as e:
         print(f"An error occurred during database creation: {e}")
     finally:
@@ -83,6 +72,7 @@ def add_user(telegram_id, referral_count=0):
         cursor.execute("INSERT OR REPLACE INTO user_referrals (telegram_id, referral_count) VALUES (?, ?)",
                        (telegram_id, referral_count))
         conn.commit()
+        print(f"User with telegram_id {telegram_id} added successfully.")
         return telegram_id
     except sqlite3.IntegrityError as e:
         print(f"Error adding user: {e}")
@@ -113,6 +103,8 @@ def add_device(telegram_id, device_index, device_type, is_paid=False, subscripti
             VALUES (?, ?, ?, ?, ?, ?)
         """, (device_uuid, telegram_id, device_index, device_type, is_paid, subscription_end_time))
         conn.commit()
+        print(
+            f"Device with UUID {device_uuid} added for user {telegram_id} at index {device_index} with type {device_type}")
         return device_uuid
 
     except sqlite3.IntegrityError as e:
@@ -170,126 +162,6 @@ def get_user_data(telegram_id):
             conn.close()
 
 
-def get_device_uuid(telegram_id, device_type):
-    conn = None
-    try:
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT device_uuid
-            FROM user_devices
-            WHERE telegram_id = ? AND device_type = ?
-        """, (telegram_id, device_type))
-
-        results = cursor.fetchall() # Get all matching devices
-
-        if len(results) == 0:
-            return None # No device found
-        elif len(results) > 1:
-            print(f"Warning: Multiple devices found for user {telegram_id} with type {device_type}. Returning None.")
-            return None  # Multiple devices found, ambiguous
-        else:
-            return results[0][0]  # Return the device_uuid
-
-    except sqlite3.Error as e:
-        print(f"An error occurred: {e}")
-        return None  # Return None in case of an error
-    finally:
-        if conn:
-            conn.close()
-
-
-#Получить статус оплачено или нет у устройства
-def get_device_payment_status(telegram_id, device_type):
-    conn = None
-    try:
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT is_paid
-            FROM user_devices
-            WHERE telegram_id = ? AND device_type = ?
-        """, (telegram_id, device_type))
-
-        results = cursor.fetchall()
-
-        if len(results) == 0:
-            return (None, None)  # No device found
-        elif len(results) > 1:
-            print(f"Warning: Multiple devices found for user {telegram_id} with type {device_type}.  Returning (None, None).")
-            return (None, None)  # Multiple devices found, ambiguous
-        else:
-            is_paid = bool(results[0][0])  # Convert to boolean
-            return is_paid
-
-    except sqlite3.Error as e:
-        print(f"An error occurred: {e}")
-        return (None, None)  # Return None in case of an error
-    finally:
-        if conn:
-            conn.close()
-
-#Получить время окончания подписки на определенном устройстве
-def get_device_subscription_end_time(telegram_id, device_type):
-    conn = None
-    try:
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT subscription_end_time
-            FROM user_devices
-            WHERE telegram_id = ? AND device_type = ?
-        """, (telegram_id, device_type))
-
-        results = cursor.fetchall()
-
-        if len(results) == 0:
-            return None  # No device found
-        elif len(results) > 1:
-            print(f"Warning: Multiple devices found for user {telegram_id} with type {device_type}. Returning None.")
-            return None  # Multiple devices found, ambiguous
-        else:
-            return results[0][0] # Return the subscription_end_time
-
-    except sqlite3.Error as e:
-        print(f"An error occurred: {e}")
-        return None  # Return None in case of an error
-    finally:
-        if conn:
-            conn.close()
-
-
-#Узнать кол-во рефералов
-def get_user_referral_count(telegram_id):
-    conn = None
-    try:
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT referral_count
-            FROM user_referrals
-            WHERE telegram_id = ?
-        """, (telegram_id,))
-
-        result = cursor.fetchone()
-
-        if result:
-            return result[0]  # Return the referral count
-        else:
-            return None  # User not found
-
-    except sqlite3.Error as e:
-        print(f"An error occurred: {e}")
-        return None  # Return None in case of an error
-    finally:
-        if conn:
-            conn.close()
-
-#Изменить кол-во рефералов
 def update_referral_count(telegram_id, new_count):
     """Updates a user's referral count."""
     conn = None
@@ -298,6 +170,7 @@ def update_referral_count(telegram_id, new_count):
         cursor = conn.cursor()
         cursor.execute("UPDATE user_referrals SET referral_count = ? WHERE telegram_id = ?", (new_count, telegram_id))
         conn.commit()
+        print(f"Referral count for telegram_id {telegram_id} updated to {new_count}")
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
     finally:
@@ -306,7 +179,6 @@ def update_referral_count(telegram_id, new_count):
 
 
 def update_device_status(device_uuid, is_paid, subscription_end_time):
-    subscription_end_time=subscription_end_time
     """Updates a device's status."""
     conn = None
     try:
@@ -318,6 +190,7 @@ def update_device_status(device_uuid, is_paid, subscription_end_time):
             WHERE device_uuid = ?
         """, (is_paid, subscription_end_time, device_uuid))
         conn.commit()
+        print(f"Device {device_uuid} updated.")
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
     finally:
@@ -333,6 +206,7 @@ def delete_device(device_uuid):
         cursor = conn.cursor()
         cursor.execute("DELETE FROM user_devices WHERE device_uuid = ?", (device_uuid,))
         conn.commit()
+        print(f"Device with UUID {device_uuid} deleted successfully.")
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
     finally:
@@ -352,29 +226,10 @@ def delete_user(telegram_id):
         cursor.execute("DELETE FROM user_referrals WHERE telegram_id = ?", (telegram_id,))
 
         conn.commit()
+        print(f"User with telegram_id {telegram_id} and their devices deleted successfully.")
 
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
-    finally:
-        if conn:
-            conn.close()
-
-#Проверка есть пользователь или нет
-def check_user_exists(telegram_id):
-    """Checks if a user with the given telegram_id exists in the database."""
-    conn = None
-    try:
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT 1 FROM user_referrals WHERE telegram_id = ?", (telegram_id,))
-        result = cursor.fetchone()
-
-        return result is not None  # Returns True if a row was found, False otherwise
-
-    except sqlite3.Error as e:
-        print(f"An error occurred: {e}")
-        return False  # Assume user doesn't exist in case of an error
     finally:
         if conn:
             conn.close()
@@ -409,9 +264,23 @@ def get_all_users():
 # Example usage:
 # 1. This code will now explicitly delete the "user_data.db" file if it exists
 # 2. Run this code to create a new database and tables
-if __name__ == "__main__":
 
-    #delete_user(5510185795)
+create_database()
+telegram_id = add_user(12345, referral_count=5)
+
+if telegram_id:  # Check if the user was added successfully
+    # Register devices, with specific indices
+    device_uuid1 = add_device(telegram_id, 1, "iPhone", is_paid=True, subscription_end_time="2024-06-15")
+    device_uuid2 = add_device(telegram_id, 2, "Mac", is_paid=False)  # Add another device
+    device_uuid3 = add_device(telegram_id, 3, "Android", is_paid=False)  # Add a third
+    device_uuid4 = add_device(telegram_id, 4, "Windows", is_paid=True, subscription_end_time="2024-07-20")
+
+    add_user(12346, referral_count=0)
+    device_uuid1 = add_device(12346, 1, "iPhone", is_paid=True, subscription_end_time="2024-06-15")
+    device_uuid2 = add_device(12346, 2, "Mac", is_paid=False)  # Add another device
+    device_uuid3 = add_device(12346, 3, "Android", is_paid=False)  # Add a third
+    device_uuid4 = add_device(12346, 4, "Windows", is_paid=True, subscription_end_time="2024-07-20")
+
     all_users = get_all_users()
     print("Все пользователи:")
     for user in all_users:
