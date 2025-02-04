@@ -281,9 +281,7 @@ def back_to_main_menu(call):
     sms="Вы вернулись в Главное меню: "
     bot.send_message(call.message.chat.id,sms, reply_markup=markup)
 
-
-
-#Мой ВПН, надо подключить SQL чтоб нормально читать пользователей
+#Выбор устройства для продления
 @bot.callback_query_handler(func=lambda call: call.data == "my_vpn")
 def my_vpn(call):
     user_id = call.from_user.id
@@ -299,6 +297,44 @@ def my_vpn(call):
     bot.edit_message_text("Выберите устройство, для которого хотите узнать свой ключ:", call.message.chat.id,call.message.message_id, reply_markup=markup)
 
 
+
+
+#Выбор срока продления
+@bot.callback_query_handler(func=lambda call: call.data == "proceed_subscription")
+def my_vpn(call):
+    device = call.data
+    user_id = call.from_user.id
+    user_status_device = get_device_payment_status(user_id, device)
+    if user_status_device == True:
+        markup = types.InlineKeyboardMarkup()
+        button1 = types.InlineKeyboardButton("iPhone", callback_data=f'iPhone|con')
+        button2 = types.InlineKeyboardButton("Android", callback_data=f'Android|con')
+        button3 = types.InlineKeyboardButton("Mac", callback_data=f'Mac|con')
+        button4 = types.InlineKeyboardButton("Windows", callback_data=f'Windows|con')
+        button5 = types.InlineKeyboardButton("Главное меню", callback_data='main_menu')
+        markup.add(button1, button2)
+        markup.add(button3, button4)
+        markup.add(button5)
+        bot.edit_message_text("Выберите устройство, для которого хотите продлить свой ключ:", call.message.chat.id,call.message.message_id, reply_markup=markup)
+    else:
+        markup = types.InlineKeyboardMarkup()
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("iPhone") or call.data.startswith("Mac") or call.data.startswith("Android") or call.data.startswith("Windows"))
+def choose_subscription_duration_mounth(call):
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("1 месяц - 99₽", callback_data=f'1month|{device}')
+    button2 = types.InlineKeyboardButton("3 месяца - 259₽", callback_data=f'3month|{device}')
+    button3 = types.InlineKeyboardButton("6 месяцев - 499₽", callback_data=f'6month|{device}')
+    button4 = types.InlineKeyboardButton("12 месяцев - 999₽", callback_data=f'12month|{device}')
+    button5 = types.InlineKeyboardButton("Главное меню", callback_data='main_menu')
+    markup.add(button1, button2)
+    markup.add(button3, button4)
+    markup.add(button5)
+
+    bot.edit_message_text(f"Вы выбрали {device}. Выберите срок подписки:", call.message.chat.id,call.message.message_id, reply_markup=markup)
+
+
 #Узнать ссылку для ВПН
 @bot.callback_query_handler(func=lambda call: call.data.startswith("iPhone") or call.data.startswith("Mac") or call.data.startswith("Android") or call.data.startswith("Windows"))
 def choose_subscription_duration_mounth(call):
@@ -308,11 +344,11 @@ def choose_subscription_duration_mounth(call):
     user_id=call.from_user.id
     user_payment_status_device=get_device_payment_status(user_id, device)
     if user_payment_status_device == True:
+        user_endtime_device = format_subscription_end_time(get_device_subscription_end_time(user_id, device))
         current_link = get_vless_link(user_id, device)
         bot.send_message(call.message.chat.id, f"Ваша текущая ссылка для {device}: ")
         bot.send_message(call.message.chat.id, current_link)
-        formatted_time = format_subscription_end_time(get_device_subscription_end_time(user_id, device))
-        bot.send_message(call.message.chat.id, f"Время окончания вашей подписки: {formatted_time}")
+        bot.send_message(call.message.chat.id, f"Время окончания вашей подписки для {device}: {user_endtime_device}")
         markup = types.InlineKeyboardMarkup()
         button1 = types.InlineKeyboardButton("Продлить подписку", callback_data='proceed_subscription')
         button2 = types.InlineKeyboardButton("Главное меню", callback_data='main_menu')

@@ -32,7 +32,7 @@ def format_subscription_end_time(subscription_end_time):
             return formatted_time
         except ValueError:
             print(f"Error: Could not parse date string '{subscription_end_time}'. Returning None.")
-            return None
+            return subscription_end_time
 
 
 def create_database():
