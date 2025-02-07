@@ -35,53 +35,72 @@ def format_subscription_end_time(subscription_end_time):
             return subscription_end_time
 
 
+import os
+import sqlite3
+
+DATABASE_FILE = 'your_database_file.db'  # Укажите ваш файл базы данных
+
 def create_database():
     """Creates the database and tables."""
     conn = None
     try:
-        # Delete the database file if it exists
-        if not os.path.exists(DATABASE_FILE):
+        # Создаем соединение с базой данных
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
 
-            conn = sqlite3.connect(DATABASE_FILE)
-            conn.create_function("convert_datetime", 1, convert_datetime)
-            cursor = conn.cursor()
+        # Создаем таблицу user_referrals
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_referrals (
+                telegram_id INTEGER PRIMARY KEY,
+                referral_count INTEGER DEFAULT 0,
+                referrer_id INTEGER,
+                FOREIGN KEY (referrer_id) REFERENCES user_referrals(telegram_id)  -- Ссылка на реферера
+            )
+        """)
 
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS user_referrals (
-                    telegram_id INTEGER PRIMARY KEY,
-                    referral_count INTEGER DEFAULT 0
-                )
-            """)
+        # Создаем таблицу user_devices
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_devices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                telegram_id INTEGER,
+                device_uuid TEXT UNIQUE,
+                device_index INTEGER,  -- 1 to 4 to represent each device
+                device_type TEXT,       -- Device type (iPhone, Mac, Android, Windows)
+                is_paid BOOLEAN DEFAULT FALSE,
+                subscription_end_time TEXT,
+                FOREIGN KEY (telegram_id) REFERENCES user_referrals(telegram_id),
+                UNIQUE (telegram_id, device_index)  -- Ensure only one device per index
+            )
+        """)
 
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS user_devices (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    telegram_id INTEGER,
-                    device_uuid TEXT UNIQUE,
-                    device_index INTEGER,  -- 1 to 4 to represent each device
-                    device_type TEXT,       -- Device type (iPhone, Mac, Android, Windows)
-                    is_paid BOOLEAN DEFAULT FALSE,
-                    subscription_end_time TEXT,
-                    FOREIGN KEY (telegram_id) REFERENCES user_referrals(telegram_id),
-                    UNIQUE (telegram_id, device_index)  -- Ensure only one device per index
-                )
-            """)
-            conn.commit()
+        # Сохраняем изменения
+        conn.commit()
+        print("Database and tables created successfully.")
     except sqlite3.Error as e:
         print(f"An error occurred during database creation: {e}")
     finally:
         if conn:
             conn.close()
 
+# Пример вызова функции
 
-def add_user(telegram_id, referral_count=0):
-    """Adds a new user."""
+
+def add_user(telegram_id , referral_count,referrer_id):
+    """Adds a new user or updates an existing user."""
     conn = None
     try:
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
-        cursor.execute("INSERT OR REPLACE INTO user_referrals (telegram_id, referral_count) VALUES (?, ?)",
-                       (telegram_id, referral_count))
+
+        # Вставляем или обновляем пользователя
+        cursor.execute("""
+            INSERT INTO user_referrals (telegram_id, referral_count, referrer_id)
+            VALUES (?, ?, ?)
+            ON CONFLICT(telegram_id) DO UPDATE SET
+                referral_count = excluded.referral_count,
+                referrer_id = excluded.referrer_id
+        """, (telegram_id, referral_count, referrer_id))
+
         conn.commit()
         return telegram_id
     except sqlite3.IntegrityError as e:
@@ -91,6 +110,27 @@ def add_user(telegram_id, referral_count=0):
     finally:
         if conn:
             conn.close()
+
+
+
+def get_referrer_id(telegram_id):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+
+    # Выполняем запрос для получения реферера
+    cursor.execute("""
+        SELECT referrer_id FROM user_referrals WHERE telegram_id = ?
+    """, (telegram_id,))
+
+    # Получаем результат
+    result = cursor.fetchone()
+    conn.close()
+
+    # Если реферер найден, возвращаем его ID, иначе возвращаем None
+    if result:
+        return result[0]  # Возвращаем реферера
+    return None  # Если реферер не найден
+
 
 
 def add_device(telegram_id, device_index, device_type, is_paid=False, subscription_end_time=None):
@@ -131,9 +171,10 @@ def get_user_data(telegram_id):
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT referral_count FROM user_referrals WHERE telegram_id = ?", (telegram_id,))
+        cursor.execute("SELECT referral_count, referrer_id FROM user_referrals WHERE telegram_id = ?", (telegram_id,))
         referral_result = cursor.fetchone()
         referral_count = referral_result[0] if referral_result else 0
+        referral_id = referral_result[1] if referral_result else 0
 
         cursor.execute("""
             SELECT device_uuid, device_index, device_type, is_paid, subscription_end_time
@@ -159,6 +200,7 @@ def get_user_data(telegram_id):
         return {
             'telegram_id': telegram_id,
             'referral_count': referral_count,
+            'referral_id': referral_id,
             'devices': device_data
         }
 
@@ -411,7 +453,7 @@ def get_all_users():
 # 2. Run this code to create a new database and tables
 if __name__ == "__main__":
 
-    #delete_user(5510185795)
+    #delete_user(1120515812)
     all_users = get_all_users()
     print("Все пользователи:")
     for user in all_users:
