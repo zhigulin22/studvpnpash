@@ -56,9 +56,7 @@ async def generate_vless_link_for_buy(user_id,message_chat_id,device_type):
 
 async def restart_xray(ssh):
     try:
-        print(f"Тип ssh.run: {type(await ssh.run('systemctl restart xray',check=True))}")
         result = await ssh.run('systemctl restart xray',check=True)
-        print("Xray запущен.")
     except Exception as e:
         print(f"Ошибка при перезапуске Xray: {e}")
 
@@ -67,95 +65,53 @@ async def restart_xray(ssh):
 
 async def remove_uuid_from_config(config_file, uuid_to_remove, uuid_keyword=UUID_KEYWORD):
     """Удаляет строку с указанным UUID из файла конфигурации."""
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    lines=[]
     try:
-        asyncssh.connect(SERVER_IP, username=SERVER_USERNAME, password=SERVER_PASSWORD)
-        sftp = ssh.open_sftp()
-        with sftp.open(CONFIG_FILE_PATH, 'r') as config_file:
-            lines = config_file.readlines()
-        if not lines:
-            return False  # Config file empty or not found
+        # SSH подключение к серверу
+        async with asyncssh.connect(SERVER_IP, username=SERVER_USERNAME, password=SERVER_PASSWORD) as ssh:
 
-        updated_lines = []
-        uuid_str = str(uuid_to_remove) # converting UUID to a string
+            # Открываем SFTP-сессию
+            async with ssh.start_sftp_client() as sftp:
+                # Читаем конфиг
+                async with sftp.open(CONFIG_FILE_PATH, 'r') as config_file:
+                    content = await config_file.read()  # Читаем весь файл
+                    lines = content.splitlines(keepends=True)
+                if not lines:
+                    return False  # Config file empty or not found
 
-        fl=0
+                updated_lines = []
+                uuid_str = str(uuid_to_remove) # converting UUID to a string
 
-        for line in lines:
-            if fl==1:
                 fl=0
-                continue
-            if  uuid_str not in line: # Check also for the UUID Keyword
-                print(line)
-                updated_lines.append(line)
-            if uuid_str in line:
-                fl=1
-                updated_lines.pop()
 
-        for line in updated_lines:
-            print(line)
+                for line in lines:
+                    if fl==1:
+                        fl=0
+                        continue
+                    if  uuid_str not in line: # Check also for the UUID Keyword
+                        updated_lines.append(line)
+                    if uuid_str in line:
+                        fl=1
+                        updated_lines.pop()
 
-        with sftp.open(CONFIG_FILE_PATH, 'w') as config_file:
-            config_file.writelines(updated_lines)
+                async with sftp.open(CONFIG_FILE_PATH, 'w') as config_file:
+                    await config_file.write(''.join(updated_lines))
 
-        await restart_xray(ssh)
+                await restart_xray(ssh)
 
-        sftp.close()
-        ssh.close()
     except Exception as e:
         print(f"Error writing config file: {e}")
         return False
 
-
-
-#Для обновления при покупке
-# def update_server_config_for_buy(new_uuid):
-#     # SSH подключение к серверу
-#     ssh = paramiko.SSHClient()
-#     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-#     try:
-#         ssh.connect(SERVER_IP, username=SERVER_USERNAME, password=SERVER_PASSWORD)
-#         sftp = ssh.open_sftp()
-#
-#         with sftp.open(CONFIG_FILE_PATH, 'r') as config_file:
-#             config = json.load(config_file)
-#
-#         # Обновление UUID в конфигурации
-#         if 'inbounds' in config:
-#             for inbound in config['inbounds']:
-#                 if 'settings' in inbound and 'clients' in inbound['settings']:
-#
-#                         new_client = {
-#                             'id': new_uuid
-#                         }
-#                         inbound['settings']['clients'].append(new_client)
-#
-#         # Сохранение обновленной конфигурации
-#         with sftp.open(CONFIG_FILE_PATH, 'w') as config_file:
-#             json.dump(config, config_file, indent=4)
-#
-#         # Перезапуск Xray после сохранения конфигурации
-#         restart_xray(ssh)
-#
-#         sftp.close()
-#         ssh.close()
-#         # Добавление или обновление UUID в базе данных
-#
-#     except Exception as e:
-#         print(f"Ошибка при обновлении конфигурации: {e}")
-
-
+#Добавление нового Uuid в конфиг
 async def update_config_on_server(new_uuid):
     try:
         # SSH подключение к серверу
-        with asyncssh.connect(SERVER_IP, username=SERVER_USERNAME, password=SERVER_PASSWORD) as ssh:
+        async with asyncssh.connect(SERVER_IP, username=SERVER_USERNAME, password=SERVER_PASSWORD) as ssh:
 
             # Открываем SFTP-сессию
-            with ssh.start_sftp_client() as sftp:
+            async with ssh.start_sftp_client() as sftp:
                 # Читаем конфиг
-                with sftp.open(CONFIG_FILE_PATH, 'r') as config_file:
+                async with sftp.open(CONFIG_FILE_PATH, 'r') as config_file:
                     content = await config_file.read()
                     config = json.loads(content)
 
@@ -187,8 +143,6 @@ async def dop_free_days(message_id, user_id):
     device_comb=["iPhone", "Android", "Mac", "Windows"]
     for device in device_comb:
         cur_time_end = await get_device_subscription_end_time(user_id, device)
-        print(cur_time_end)
-        print(type(cur_time_end))
         if cur_time_end != "None":
             cur_time_end_new_format = datetime.fromisoformat(cur_time_end)
             cur_time_end_new_format = cur_time_end_new_format + timedelta(days=7)
@@ -296,7 +250,8 @@ async def choose_mod(call):
     if user_status_device is True:
         await bot.send_message(call.message.chat.id, f"У вас уже есть подписка для {device}.")
         user_endtime_device = await get_device_subscription_end_time(user_id, device)
-        await bot.send_message(call.message.chat.id, f"Время окончания вашей подписки для {device}: {user_endtime_device}")
+        user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
+        await bot.send_message(call.message.chat.id, f"Время окончания вашей подписки для {device}: {user_endtime_device_str}")
         markup = types.InlineKeyboardMarkup()
         button1 = types.InlineKeyboardButton("Продлить подписку", callback_data='proceed_subscription')
         button2 = types.InlineKeyboardButton("Главное меню", callback_data='main_menu')
@@ -327,20 +282,22 @@ async def choose_subscription_duration_mounth(call):
     device = data[1]
     cur_time = 0
     user_id = call.from_user.id  #
+    sub = ""
+    amount = 0
     if subscription_duration == "1month1":
-        cur_time = 3
+        cur_time = 31
         amount = 99
         sub = "1 месяц"
     elif subscription_duration == "3month1":
-        cur_time = 90
+        cur_time = 91
         amount = 259
         sub = "3 месяца"
     elif subscription_duration == "6month1":
-        cur_time = 180
+        cur_time = 181
         amount = 499
         sub = "6 месяцев"
     elif subscription_duration == "12month1":
-        cur_time = 360
+        cur_time = 361
         amount = 999
         sub = "12 месяцев"
     user_status_device = await get_device_payment_status(user_id, device)
@@ -367,17 +324,17 @@ async def choose_subscription_duration_mounth(call):
             while attempts < max_attempts:
                 status = await check_payment_status(payment_id)
                 if status == 'succeeded':
-                    cur_time_end = datetime.now() + timedelta(minutes=cur_time)
+                    cur_time_end = datetime.now() + timedelta(days=cur_time)
                     device_uuid = await get_device_uuid(user_id, device)
-                    await update_device_status(device_uuid,True,cur_time_end)
                     vless_link = await generate_vless_link_for_buy(user_id, call.message.chat.id, device)
+                    await update_device_status(device_uuid, True, cur_time_end)
                     await bot.send_message(call.message.chat.id, text=f"Ваша VLESS ссылка для {device}: {vless_link}")
                     #user_endtime_device = get_device_subscription_end_time(user_id, device)
                     #update_device_status(device_uuid, True, user_endtime_device)
                     #cur_time_end = format_subscription_end_time(cur_time_end)
                     await dop_free_days(call.message.chat.id, user_id)
                     cur_time = await get_device_subscription_end_time(user_id, device)
-                    cur_time_end1 = await format_subscription_end_time(cur_time)
+                    cur_time_end1 = await format_subscription_end_time(str(cur_time))
                     await bot.send_message(call.message.chat.id,f"Время окончания вашей подписки для {device}: {cur_time_end1}")
                     break
                 elif status == 'canceled':
@@ -403,9 +360,11 @@ async def choose_subscription_duration_mounth(call):
         button2 = types.InlineKeyboardButton("Главное меню", callback_data='main_menu')
         markup.add(button2)
     else:
+        print(1)
         await bot.send_message(call.message.chat.id, f"У вас уже есть подписка для {device}." )
-        user_endtime_device = await format_subscription_end_time(get_device_subscription_end_time(user_id, device))
-        await bot.send_message(call.message.chat.id, f"Время окончания вашей подписки для {device}: {user_endtime_device}")
+        user_endtime_device = await get_device_subscription_end_time(user_id, device)
+        user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
+        await bot.send_message(call.message.chat.id, f"Время окончания вашей подписки для {device}: {user_endtime_device_str}")
         markup = types.InlineKeyboardMarkup()
         button1 = types.InlineKeyboardButton("Продлить подписку", callback_data='proceed_subscription')
         button2 = types.InlineKeyboardButton("Главное меню", callback_data='main_menu')
@@ -448,9 +407,10 @@ async def learn_key(call):
     up = data[0]
     device = data[1]
     user_id=call.from_user.id
-    user_payment_status_device=await get_device_payment_status(user_id, device)
+    user_payment_status_device = await get_device_payment_status(user_id, device)
     if user_payment_status_device is True:
-        user_endtime_device = await format_subscription_end_time(get_device_subscription_end_time(user_id, device))
+        user_end_time=await get_device_subscription_end_time(user_id, device)
+        user_endtime_device = await format_subscription_end_time(str(user_end_time))
         current_link = await get_vless_link(user_id, device)
         await bot.send_message(call.message.chat.id, f"Ваша текущая ссылка для {device}: ")
         await bot.send_message(call.message.chat.id, current_link)
@@ -519,29 +479,32 @@ async def time_to_proceed(call):
 #Продление подписки
 @bot.callback_query_handler(func=lambda call: call.data.startswith("1month2") or call.data.startswith("3month2") or call.data.startswith("6month2") or call.data.startswith("12month2"))
 async def pay_to_proceed(call):
+    print(1)
     data = call.data.split("|")
     subscription_duration = data[0]
     device = data[1]
     cur_time = 0
     user_id = call.from_user.id  #
+    amount = 0
+    sub = ""
     if subscription_duration == "1month2":
-        cur_time = 30
+        cur_time = 31
         amount = 99
         sub = "1 месяц"
     elif subscription_duration == "3month2":
-        cur_time = 90
+        cur_time = 91
         amount = 259
         sub = "3 месяца"
     elif subscription_duration == "6month2":
-        cur_time = 180
+        cur_time = 181
         amount = 499
         sub = "6 месяцев"
     elif subscription_duration == "12month2":
-        cur_time = 360
+        cur_time = 361
         amount = 999
         sub = "12 месяцев"
     user_status_device = await get_device_payment_status(user_id, device)
-    if (user_status_device == True):
+    if user_status_device is True:
         await bot.send_message(call.message.chat.id, f"Ссылка для оплаты: ")
 
         user_id = call.from_user.id
@@ -557,19 +520,20 @@ async def pay_to_proceed(call):
             attempts = 0
             max_attempts = 120  # Проверяем в течение 10 минут
             while attempts < max_attempts:
-                status = check_payment_status(payment_id)
+                status = await check_payment_status(payment_id)
                 if status == 'succeeded':
                     cur_time_end = await get_device_subscription_end_time(user_id, device)
-                    cur_time_end = await datetime.fromisoformat(cur_time_end)
+                    cur_time_end = datetime.fromisoformat(cur_time_end)
                     cur_time_end = cur_time_end + timedelta(days=cur_time)
-                    device_uuid = get_device_uuid(user_id, device)
+                    device_uuid = await get_device_uuid(user_id, device)
                     await update_device_status(device_uuid, device, cur_time_end)
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id, f"Ваша VLESS ссылка для {device}:")
                     await bot.send_message(call.message.chat.id, vless_link)
-                    user_endtime_device = await format_subscription_end_time(get_device_subscription_end_time(user_id, device))
+                    user_endtime_device = await get_device_subscription_end_time(user_id, device)
+                    user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
                     await bot.send_message(call.message.chat.id,
-                                     f"Время окончания вашей подписки для {device}: {user_endtime_device}")
+                                     f"Время окончания вашей подписки для {device}: {user_endtime_device_str}")
                     break
                 elif status == 'canceled':
                     await bot.send_message(call.message.chat.id, text="Платёж был отменён.")
@@ -606,12 +570,14 @@ async def referral_program(call):
 @bot.callback_query_handler(func=lambda call: call.data == "col_ref")
 async def referral_program(call):
     user_id = call.from_user.id
-    user_col_ref=get_user_referral_count(user_id)
-    await bot.send_message(call.message.chat.id, f"Кол-во человек, которые купили подписку по вашей ссылке: {user_col_ref}")
-    await bot.send_message(call.message.chat.id,f"Вам было начислено за это: {user_col_ref*7} дней")
+    user_col_ref = await get_user_referral_count(user_id)
     markup = types.InlineKeyboardMarkup()
     button2 = types.InlineKeyboardButton("Главное меню", callback_data='main_menu',reply_markup=markup)
     markup.add(button2)
+    await bot.send_message(call.message.chat.id, f"""
+        Кол-во человек, которые купили по подписку по вашей рефеоальной ссылке = {user_col_ref}. 
+Вам было начислено: {user_col_ref*7} бесплатных дней за все время.
+    """,reply_markup=markup)
 
 
 
@@ -654,7 +620,6 @@ async def check_subscriptions_and_remove_expired():
     try:
         conn = sqlite3.connect('vpn_keys.db')
         cursor = conn.cursor()
-        print(1)
         # Проверка истёкших подписок
         cursor.execute("""
             SELECT device_uuid, subscription_end_time 
@@ -668,7 +633,6 @@ async def check_subscriptions_and_remove_expired():
         for device_uuid, subscription_end_time in devices:
             if subscription_end_time:
                 expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
-                print(expiry_date)
                 if expiry_date < now:
                     print(f"Подписка истекла для UUID: {device_uuid}. Удаляем из конфигурации.")
                     await remove_uuid_from_config(CONFIG_FILE_PATH, device_uuid)
@@ -689,7 +653,7 @@ async def check_subscriptions_and_remove_expired():
 
 async def start_scheduler():
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', minutes=1)
+    scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', days=1)
     scheduler.start()
     print("Планировщик подписок запущен.")
 

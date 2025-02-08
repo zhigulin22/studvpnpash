@@ -16,7 +16,7 @@ async def convert_datetime(date_string):
             return datetime.datetime.fromisoformat(date_string)
         except ValueError:
             try:
-                return datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S.%f")
+                return datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 return None
     return None
@@ -430,7 +430,7 @@ async def get_all_users():
 
         all_users_data = []
         for telegram_id in telegram_ids:
-            user_data = get_user_data(telegram_id)  # Use the existing get_user_data function
+            user_data = await get_user_data(telegram_id)  # Use the existing get_user_data function
             if user_data is not None:# Only add valid user data
                 all_users_data.append(user_data)
 
