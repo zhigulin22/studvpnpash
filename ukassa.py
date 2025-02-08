@@ -2,11 +2,11 @@ import requests
 import uuid
 
 # Данные ЮKassa
-SHOP_ID = '1026364'
-API_KEY = 'test_PeQtNvYjivtuj1BEiGeiX5-TRsL_psAvCGFgYVafnPo'
-RETURN_URL = 'https://t.me/studvpn666_bot'
+SHOP_ID = '1026363'
+API_KEY = 'test_ciER8rHNNK-VNLG7AIzADQHcpCBoobz-LaBEpiBrXmE'
+RETURN_URL = 'https://t.me/Stud_VPN_bot'
 
-def create_payment(amount, description):
+async def create_payment(amount, description):
     payment_id = str(uuid.uuid4())  # Уникальный ID платежа
     idempotence_key = str(uuid.uuid4())  # Уникальный идемпотентный ключ
 
@@ -44,7 +44,7 @@ def create_payment(amount, description):
         return None
 
 
-def check_payment_status(payment_id):
+async def check_payment_status(payment_id):
     url = f"https://api.yookassa.ru/v3/payments/{payment_id}"
     try:
         response = requests.get(

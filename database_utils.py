@@ -2,26 +2,27 @@ import sqlite3
 import datetime
 import uuid
 import os  # Import the 'os' module
+import asyncio
 
 DATABASE_FILE = "vpn_keys.db"
 DEVICE_LIMIT = 4  # Maximum number of devices per user
 ALLOWED_DEVICE_TYPES = ["iPhone", "Mac", "Android", "Windows"]
 
 
-def convert_datetime(date_string):
+async def convert_datetime(date_string):
     """Converts a date string to a datetime object or None."""
     if date_string:
         try:
             return datetime.datetime.fromisoformat(date_string)
         except ValueError:
             try:
-                return datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S")
+                return datetime.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S.%f")
             except ValueError:
                 return None
     return None
 
 
-def format_subscription_end_time(subscription_end_time):
+async def format_subscription_end_time(subscription_end_time):
     if subscription_end_time:
         try:
             # Convert string to datetime object
@@ -34,13 +35,9 @@ def format_subscription_end_time(subscription_end_time):
             print(f"Error: Could not parse date string '{subscription_end_time}'. Returning None.")
             return subscription_end_time
 
+# Укажите ваш файл базы данных
 
-import os
-import sqlite3
-
-DATABASE_FILE = 'your_database_file.db'  # Укажите ваш файл базы данных
-
-def create_database():
+async def create_database():
     """Creates the database and tables."""
     conn = None
     try:
@@ -85,7 +82,7 @@ def create_database():
 # Пример вызова функции
 
 
-def add_user(telegram_id , referral_count,referrer_id):
+async def add_user(telegram_id , referral_count,referrer_id):
     """Adds a new user or updates an existing user."""
     conn = None
     try:
@@ -113,7 +110,7 @@ def add_user(telegram_id , referral_count,referrer_id):
 
 
 
-def get_referrer_id(telegram_id):
+async def get_referrer_id(telegram_id):
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
 
@@ -133,7 +130,7 @@ def get_referrer_id(telegram_id):
 
 
 
-def add_device(telegram_id, device_index, device_type, is_paid=False, subscription_end_time=None):
+async def add_device(telegram_id, device_index, device_type, is_paid=False, subscription_end_time=None):
     """Adds a device for a user, limiting to 4 devices."""
     conn = None
     try:
@@ -164,7 +161,7 @@ def add_device(telegram_id, device_index, device_type, is_paid=False, subscripti
             conn.close()
 
 
-def get_user_data(telegram_id):
+async def get_user_data(telegram_id):
     """Retrieves user data, referral count, and device information."""
     conn = None
     try:
@@ -205,14 +202,14 @@ def get_user_data(telegram_id):
         }
 
     except sqlite3.Error as e:
-        print(f"An error occurred: {e}")
+        #print(f"An error occurred: {e}")
         return None
     finally:
         if conn:
             conn.close()
 
 
-def get_device_uuid(telegram_id, device_type):
+async def get_device_uuid(telegram_id, device_type):
     conn = None
     try:
         conn = sqlite3.connect(DATABASE_FILE)
@@ -229,13 +226,12 @@ def get_device_uuid(telegram_id, device_type):
         if len(results) == 0:
             return None # No device found
         elif len(results) > 1:
-            print(f"Warning: Multiple devices found for user {telegram_id} with type {device_type}. Returning None.")
             return None  # Multiple devices found, ambiguous
         else:
             return results[0][0]  # Return the device_uuid
 
     except sqlite3.Error as e:
-        print(f"An error occurred: {e}")
+        #print(f"An error occurred: {e}")
         return None  # Return None in case of an error
     finally:
         if conn:
@@ -243,7 +239,7 @@ def get_device_uuid(telegram_id, device_type):
 
 
 #Получить статус оплачено или нет у устройства
-def get_device_payment_status(telegram_id, device_type):
+async def get_device_payment_status(telegram_id, device_type):
     conn = None
     try:
         conn = sqlite3.connect(DATABASE_FILE)
@@ -274,7 +270,7 @@ def get_device_payment_status(telegram_id, device_type):
             conn.close()
 
 #Получить время окончания подписки на определенном устройстве
-def get_device_subscription_end_time(telegram_id, device_type):
+async def get_device_subscription_end_time(telegram_id, device_type):
     conn = None
     try:
         conn = sqlite3.connect(DATABASE_FILE)
@@ -305,7 +301,7 @@ def get_device_subscription_end_time(telegram_id, device_type):
 
 
 #Узнать кол-во рефералов
-def get_user_referral_count(telegram_id):
+async def get_user_referral_count(telegram_id):
     conn = None
     try:
         conn = sqlite3.connect(DATABASE_FILE)
@@ -332,7 +328,7 @@ def get_user_referral_count(telegram_id):
             conn.close()
 
 #Изменить кол-во рефералов
-def update_referral_count(telegram_id, new_count):
+async def update_referral_count(telegram_id, new_count):
     """Updates a user's referral count."""
     conn = None
     try:
@@ -347,7 +343,7 @@ def update_referral_count(telegram_id, new_count):
             conn.close()
 
 
-def update_device_status(device_uuid, is_paid, subscription_end_time):
+async def update_device_status(device_uuid, is_paid, subscription_end_time):
     subscription_end_time=subscription_end_time
     """Updates a device's status."""
     conn = None
@@ -367,7 +363,7 @@ def update_device_status(device_uuid, is_paid, subscription_end_time):
             conn.close()
 
 
-def delete_device(device_uuid):
+async def delete_device(device_uuid):
     """Deletes a device."""
     conn = None
     try:
@@ -382,7 +378,7 @@ def delete_device(device_uuid):
             conn.close()
 
 
-def delete_user(telegram_id):
+async def delete_user(telegram_id):
     """Deletes a user and their devices."""
     conn = None
     try:
@@ -402,7 +398,7 @@ def delete_user(telegram_id):
             conn.close()
 
 #Проверка есть пользователь или нет
-def check_user_exists(telegram_id):
+async def check_user_exists(telegram_id):
     """Checks if a user with the given telegram_id exists in the database."""
     conn = None
     try:
@@ -422,7 +418,7 @@ def check_user_exists(telegram_id):
             conn.close()
 
 
-def get_all_users():
+async def get_all_users():
     """Retrieves data for all users in the database."""
     conn = None
     try:
@@ -450,12 +446,16 @@ def get_all_users():
 
 # Example usage:
 # 1. This code will now explicitly delete the "user_data.db" file if it exists
-# 2. Run this code to create a new database and tables
-if __name__ == "__main__":
 
-    #delete_user(1120515812)
-    all_users = get_all_users()
+
+async def main():
+    #await delete_user(5510185795)
+    all_users = await get_all_users()
     print("Все пользователи:")
     for user in all_users:
         print(user)
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
 
