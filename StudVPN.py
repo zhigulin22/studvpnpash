@@ -82,7 +82,6 @@ async def remove_uuid_from_config(config_file, uuid_to_remove, uuid_keyword=UUID
         # SSH подключение к серверу
         async with asyncssh.connect(SERVER_IP, username=SERVER_USERNAME, password=SERVER_PASSWORD) as ssh:
 
-            # Открываем SFTP-сессию
             async with ssh.start_sftp_client() as sftp:
                 # Читаем конфиг
                 async with sftp.open(CONFIG_FILE_PATH, 'r') as config_file:
