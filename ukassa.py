@@ -4,7 +4,7 @@ import uuid
 # Данные ЮKassa
 SHOP_ID = '1026363'
 API_KEY = 'test_ciER8rHNNK-VNLG7AIzADQHcpCBoobz-LaBEpiBrXmE'
-RETURN_URL = 'https://t.me/Stud_VPN_bot'
+RETURN_URL = 'https://t.me/HugVPN_bot'
 
 async def create_payment(amount, description):
     payment_id = str(uuid.uuid4())  # Уникальный ID платежа
