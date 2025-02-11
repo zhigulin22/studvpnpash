@@ -163,6 +163,7 @@ async def add_device(telegram_id, device_index, device_type, is_paid=False, subs
             return None
 
         if device_type not in ALLOWED_DEVICE_TYPES:
+            print(device_type)
             print(f"Invalid device_type. Must be one of: {ALLOWED_DEVICE_TYPES}")
             return None
 
@@ -506,7 +507,7 @@ async def get_all_users():
 
 
 async def main():
-    #await delete_user(5510185795)
+    #await delete_user(5839151088)
     all_users = await get_all_users()
     print("Все пользователи:")
     for user in all_users:
