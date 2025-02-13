@@ -6,6 +6,7 @@ import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import uuid
 import json
+import aiogram
 import time
 from ukassa import *
 import datetime
@@ -20,7 +21,7 @@ from datetime import datetime, timedelta
 from database_utils import create_database, get_message_id_by_telegram_id, update_referrer_id,add_user, get_referrer_id, format_subscription_end_time,add_device,get_user_referral_count,get_device_subscription_end_time, delete_user, delete_device, get_device_payment_status,get_device_uuid,update_device_status, update_referral_count,get_user_data,get_all_users,check_user_exists
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
-TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
+TELEGRAM_TOKEN = '7795571968:AAFWPrFsFxo3M0Pu7NDweHqB9-RiTogFr3Y'
 SERVER_IP = '77.239.100.20'
 DATABASE_FILE = "vpn_keys.db"
 SERVER_PORT = 443  # Обычно 22 для SSH
@@ -36,6 +37,7 @@ logging.basicConfig(
 )
 
 last_message_ids = {}
+user_payment_status = {}
 
 async def get_vless_link(user_id,device_type):
     user_uuid_from_device = await get_device_uuid(user_id,device_type)
@@ -230,18 +232,24 @@ async def user_has_registered_in_bot(user_id):
     chat_id_from_recipient = await get_message_id_by_telegram_id(user_id)
     await send_message_with_deletion(chat_id_from_recipient, "🎁Вам добавлено бесплатно 14 суток пользования нашим ВПН на все устройства, за регистрацию в боте🎁")
 
+
+#Обрабатываем старт
 @bot.message_handler(commands=['start'])
 async def start(message):
     user_name = message.from_user.first_name
     welcome_message = (
         f"{user_name}, рады приветствовать тебя в нашем ВПН \n\n"
-        "🚀 Безопасный и быстрый VPN у тебя под рукой! 🔒\n\n"
-        "Забудь о плохо загружающихся видео и плохом соединении.\n\n"
-        "С нашим ботом у тебя будет: \n"
-        "❗  Самая высокая скорость\n"
-        "❗  Конфиденциальность данных\n"
-        "❗  Удобный и понятный интерфейс\n"
-        "❗  Защита в публичных Wi-Fi сетях"
+        """Очень часто при пользовании VPN возникают проблемы:
+🤬 Зависающее видео
+😥 Бесконечная реклама
+😡 Утечка данных
+😱 Риск блокировки из-за частой смены IP-адреса
+
+Но можно купить HugVPN и всего этого не будет👍
+💵2.5 рубля/день - мало что сейчас можно взять за такую цену) 
+
+🤙Также у нас очень привлекательная реферальная система, в которой можно очень легко набрать полгода и даже больше бесплатного пользования
+"""
     )
     user_id = message.from_user.id  # Получаем user_id
     referrer = None
@@ -271,14 +279,55 @@ async def start(message):
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
     button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
-    button3 = types.InlineKeyboardButton("🤙 Реферальная программа", callback_data='referral')
-    button4 = types.InlineKeyboardButton("☎️ Поддержка", callback_data='support')
-    markup.add(button1)
-    markup.add(button2)
-    markup.add(button3)
-    markup.add(button4)
+    button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
+    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
+    button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
+    button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+    markup.add(button1,button2)
+    markup.add(button3,button5)
+    markup.add(button4,button6)
 
     await bot.send_message(message.chat.id, welcome_message, reply_markup=markup)
+
+
+
+#Выдает информацию о нас
+@bot.callback_query_handler(func=lambda call: call.data == "service")
+async def buy_vpn(call):
+    markup = types.InlineKeyboardMarkup()
+    button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+    markup.add(button5)
+    welcome_message = (
+        """
+ 🌐✨Мы создали этого бота, чтобы вы могли:
+
+- Легко и быстро подключаться к VPN и главное без рекламы.
+- Защищать свои данные от посторонних глаз с помощью современных технологий шифрования.
+- Экономить время — настройка занимает всего пару кликов, а после первого подключения нужно будет просто нажимать 1 кнопку!
+
+Почему выбирают HugVPN?
+💰 Один из самых дешевых тарифов (2.5 рубля/день)
+🚀 Высокая скорость: никаких тормозов, только комфортный серфинг.
+🔒 Безопасность: ваши данные всегда под защитой.
+🌍 Глобальность: расширяем сеть серверов постоянно .
+💬 Удобство: всё, что нужно, это нажать кнопку.
+
+Наша миссия — сделать интернет безопасным и быстрым для каждого. Попробуйте HugVPN прямо сейчас и ощутите разницу! 😊
+"""
+    )
+    await send_message_with_deletion(call.message.chat.id,welcome_message,reply_markup=markup)
+
+
+
+#Кнопка инструкций надо настроить
+@bot.callback_query_handler(func=lambda call: call.data == "instruction")
+async def buy_vpn(call):
+    markup = types.InlineKeyboardMarkup()
+    button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+    markup.add(button5)
+    await send_message_with_deletion(call.message.chat.id,"Выберите устройство, для которого хотите получить инструкцию:",reply_markup=markup)
+
+
 
 
 # Обработчик кнопки "Купить VPN"
@@ -297,6 +346,7 @@ async def buy_vpn(call):
 
 
 
+
 @bot.callback_query_handler(func=lambda call: call.data in ["iPhone", "Android", "Mac", "Windows"])
 async def choose_mod(call):
     device = call.data
@@ -310,7 +360,7 @@ async def choose_mod(call):
         button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
         markup.add(button1)
         markup.add(button2)
-        await send_message_with_deletion(call.message.chat.id, f"У вас уже есть подписка для {device}.\n\nВремя окончания вашей подписки для {device}: {user_endtime_device_str}\n\nХотите ее продлить?",markup)
+        await send_message_with_deletion(call.message.chat.id, f"У вас уже есть подписка для {device} 🟢.\n\nВремя окончания вашей подписки для {device}: {user_endtime_device_str}\n\nХотите ее продлить?",markup)
     else:
         markup = types.InlineKeyboardMarkup()
         button1 = types.InlineKeyboardButton("- 1 месяц - 99₽", callback_data=f'1month1|{device}')
@@ -356,26 +406,27 @@ async def choose_subscription_duration_mounth(call):
         amount = 899
         sub = "12 месяцев"
     user_status_device = await get_device_payment_status(user_id, device)
+    markup1 = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("❌ Отменить платеж", callback_data='cancel_pay')
+    markup1.add(button1)
+    markup = types.InlineKeyboardMarkup()
+    button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+    markup.add(button2)
+    user_payment_status[user_id] = {'status': 'pending', 'attempts': 0}
     if user_status_device is False:
-
-        #оплата
-
         user_id = call.from_user.id
         plan_text = call.data
         description = f"Подписка на {sub}."
-
         # 📤 Создание платежа через ЮKassa
         payment_link, payment_id = await create_payment(amount, description)
-        markup = types.InlineKeyboardMarkup()
-        button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
-        markup.add(button2)
-
         if payment_link:
-            await send_message_with_deletion(call.message.chat.id, text=f"👇 Перейдите по ссылке для оплаты:\n{payment_link}")
+            await send_message_with_deletion(call.message.chat.id, text=f"👇 Перейдите по ссылке для оплаты:\n{payment_link}",reply_markup=markup1)
 
             attempts = 0
             max_attempts = 120  # Проверяем в течение 10 минут
             while attempts < max_attempts:
+                if user_payment_status[user_id]['status'] == 'canceled':
+                    return
                 status = await check_payment_status(payment_id)
                 if status == 'succeeded':
                     cur_time_end = datetime.now() + timedelta(days=cur_time)
@@ -390,17 +441,17 @@ async def choose_subscription_duration_mounth(call):
                     await user_has_payed_in_bot_be_link(user_id,user_name)
                     cur_time = await get_device_subscription_end_time(user_id, device)
                     cur_time_end1 = await format_subscription_end_time(str(cur_time))
-                    await send_message_with_deletion(call.message.chat.id,f"⏳ Время окончания вашей подписки для {device}: {cur_time_end1}",markup)
+                    await send_message_with_deletion(call.message.chat.id,f"⏳ Время окончания вашей подписки для {device}: {cur_time_end1}",reply_markup=markup)
                     break
                 elif status == 'canceled':
-                    await send_message_with_deletion(call.message.chat.id, text="❌ Платёж был отменён.")
+                    await send_message_with_deletion(call.message.chat.id, text="❌ Платёж был отменён.",reply_markup=markup)
                     break
                 else:
-                    time.sleep(5)
+                    await asyncio.sleep(5)
                     attempts += 1
 
             if attempts == max_attempts:
-                await send_message_with_deletion(call.message.chat.id, text="❌Истекло время ожидания оплаты. Попробуйте снова.")
+                await send_message_with_deletion(call.message.chat.id, text="❌Истекло время ожидания оплаты. Попробуйте снова.",reply_markup=markup)
         else:
             await send_message_with_deletion(call.message.chat.id, text="❌Произошла ошибка при создании платежа. Попробуйте позже.")
 
@@ -408,17 +459,32 @@ async def choose_subscription_duration_mounth(call):
 #Обработчик команды "Назад"
 @bot.callback_query_handler(func=lambda call: call.data == "main_menu")
 async def back_to_main_menu(call):
+    user_name = call.from_user.first_name
+    welcome_message = (
+        f"{user_name}, рады приветствовать тебя в нашем ВПН \n\n"
+        """Очень часто при пользовании VPN возникают проблемы:
+🤬 Зависающее видео
+😥 Бесконечная реклама
+😡 Утечка данных
+😱 Риск блокировки из-за частой смены IP-адреса
+
+Но можно купить HugVPN и всего этого не будет👍
+💵2.5 рубля/день - мало что сейчас можно взять за такую цену) 
+
+🤙Также у нас очень привлекательная реферальная система, в которой можно очень легко набрать полгода и даже больше бесплатного пользования
+"""
+    )
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
     button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
-    button3 = types.InlineKeyboardButton("🤙 Реферальная программа", callback_data='referral')
-    button4 = types.InlineKeyboardButton("☎️ Поддержка", callback_data='support')
-    markup.add(button1)
-    markup.add(button2)
-    markup.add(button3)
-    markup.add(button4)
-    sms="🏠 Вы вернулись в Главное меню: "
-    await send_message_with_deletion(call.message.chat.id,sms, markup)
+    button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
+    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
+    button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
+    button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+    markup.add(button1, button2)
+    markup.add(button3, button5)
+    markup.add(button4, button6)
+    await send_message_with_deletion(call.message.chat.id,welcome_message, markup)
 
 #Узнать свой ВПН
 @bot.callback_query_handler(func=lambda call: call.data == "my_vpn")
@@ -514,6 +580,33 @@ async def time_to_proceed(call):
         markup.add(button2)
         await send_message_with_deletion(call.message.chat.id, "👇 Выберите действие:", markup)
 
+#Отмена платежа
+@bot.callback_query_handler(func=lambda call: call.data == "cancel_pay")
+async def cancel_pay(call):
+    user_id=call.from_user.id
+    user_name = call.from_user.first_name
+    welcome_message = (
+        f"{user_name}, твой платеж отменен ❌"
+    )
+    if user_id in user_payment_status and user_payment_status[user_id]['status'] == 'pending':
+        user_payment_status[user_id]['status'] = 'canceled'
+        await send_message_with_deletion(call.message.chat.id, welcome_message)
+    else:
+        await send_message_with_deletion(call.message.chat.id, "Нет активного платежа для отмены.")
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
+    button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
+    button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
+    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
+    button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
+    button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+    markup.add(button1, button2)
+    markup.add(button3, button5)
+    markup.add(button4, button6)
+    await send_message_with_deletion(call.message.chat.id, welcome_message, markup)
+
+
+
 #Продление подписки
 @bot.callback_query_handler(func=lambda call: call.data.startswith("1month2") or call.data.startswith("3month2") or call.data.startswith("6month2") or call.data.startswith("12month2"))
 async def pay_to_proceed(call):
@@ -541,9 +634,13 @@ async def pay_to_proceed(call):
         amount = 899
         sub = "12 месяцев"
     user_status_device = await get_device_payment_status(user_id, device)
+    markup1 = types.InlineKeyboardMarkup()
+    button4 = types.InlineKeyboardButton("❌ Отменить платеж", callback_data='cancel_pay')
+    markup1.add(button4)
     markup = types.InlineKeyboardMarkup()
     button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button2)
+    user_payment_status[user_id] = {'status': 'pending', 'attempts': 0}
     if user_status_device is True:
         user_id = call.from_user.id
         plan_text = call.data
@@ -551,12 +648,13 @@ async def pay_to_proceed(call):
 
         # 📤 Создание платежа через ЮKassa
         payment_link, payment_id = await create_payment(amount, description)
-
         if payment_link:
-            await send_message_with_deletion(call.message.chat.id, text=f"👇 Перейдите по ссылке для оплаты:\n{payment_link}")
+            await send_message_with_deletion(call.message.chat.id, f"👇 Перейдите по ссылке для оплаты:\n{payment_link}",reply_markup=markup1)
             attempts = 0
             max_attempts = 120  # Проверяем в течение 10 минут
             while attempts < max_attempts:
+                if user_payment_status[user_id]['status'] == 'canceled':
+                    return
                 status = await check_payment_status(payment_id)
                 if status == 'succeeded':
                     cur_time_end = await get_device_subscription_end_time(user_id, device)
@@ -574,13 +672,13 @@ async def pay_to_proceed(call):
                     await send_message_with_deletion(call.message.chat.id, text="❌ Платёж был отменён.")
                     break
                 else:
-                    time.sleep(3)
+                    await asyncio.sleep(5)
                     attempts += 1
 
             if attempts == max_attempts:
-                await send_message_with_deletion(call.message.chat.id, text="❌Истекло время ожидания оплаты. Попробуйте снова.")
+                await send_message_with_deletion(call.message.chat.id, text="❌Истекло время ожидания оплаты. Попробуйте снова.",reply_markup=markup)
         else:
-            await send_message_with_deletion(call.message.chat.id, text="❌Произошла ошибка при создании платежа. Попробуйте позже.")
+            await send_message_with_deletion(call.message.chat.id, text="❌Произошла ошибка при создании платежа. Попробуйте позже.",reply_markup=markup)
 
 
 
@@ -594,7 +692,7 @@ async def referral_program(call):
     button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button1)
     markup.add(button2)
-    await send_message_with_deletion(call.message.chat.id, f"🤙 Ваша реферальная ссылка: {referral_link}\n\nЕсли человек нажмет кнопку Start по вашей ссылке, вам и ему начислится по 7 дней бесплатно\n\nА если человек оформит любую подписку, то дополнительно начислится 14 дней\n\nВыберите действие:", markup)
+    await send_message_with_deletion(call.message.chat.id, f"🤙 Ваша реферальная ссылка: {referral_link}\n\n1️⃣ Если человек нажмет кнопку Start по вашей ссылке, вам и ему начислится по 7 дней бесплатно\n2️⃣ Еесли человек оформит любую подписку по вашей ссылке, начислится 14 дней\nВсе дни складываются, поэтому можно раздать ссылки друзьям и получить год бесплатного пользования", markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "col_ref")
@@ -614,22 +712,22 @@ async def referral_program(call):
 #Поддержка
 @bot.callback_query_handler(func=lambda call: call.data == "support")
 async def support(call):
-    await send_message_with_deletion(call.message.chat.id, "👉Задайте вопрос, который вас интересует.\nВам ответит первый освободившийся модератор")
     markup = types.InlineKeyboardMarkup()
-    button2 = types.InlineKeyboardButton("🏠Главное меню", callback_data='main_menu')
+    button2 = types.InlineKeyboardButton("🏠Назад", callback_data='main_menu')
     markup.add(button2)
-    await send_message_with_deletion(call.message.chat.id, "@HugVPN_Support", markup)
+    await send_message_with_deletion(call.message.chat.id, "👉Задайте вопрос, который тебя интересует.\nВам ответит первый освободившийся модератор\n\n@HugVPN_Support", markup)
 
 
 @bot.message_handler(commands=['help'])
 async def help_command(message):
     await send_message_with_deletion(message.chat.id, """
-        👉Задайте вопрос, который вас интересует. 
-        
-Вам ответит первый освободившийся модератор
+        👉Задай вопрос, который тебя интересует.         
+Тебе ответит первый освободившийся модератор 👨‍🔧
 
 @HugVPN_Support
     """)
+
+
 
 
 async def setup_menu():
@@ -696,10 +794,7 @@ async def main():
     await setup_menu()  # Настраиваем команды бота
     await create_database()  # Создаём базу данных
     await start_scheduler()  #
-
-    await asyncio.gather(
-        await bot.polling(),
-    )
+    await bot.polling()
 
 
 
