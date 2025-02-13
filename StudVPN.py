@@ -590,9 +590,9 @@ async def cancel_pay(call):
     )
     if user_id in user_payment_status and user_payment_status[user_id]['status'] == 'pending':
         user_payment_status[user_id]['status'] = 'canceled'
-        await send_message_with_deletion(call.message.chat.id, welcome_message)
     else:
         await send_message_with_deletion(call.message.chat.id, "Нет активного платежа для отмены.")
+        return
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
     button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
@@ -654,7 +654,7 @@ async def pay_to_proceed(call):
             max_attempts = 120  # Проверяем в течение 10 минут
             while attempts < max_attempts:
                 if user_payment_status[user_id]['status'] == 'canceled':
-                    return
+                    break
                 status = await check_payment_status(payment_id)
                 if status == 'succeeded':
                     cur_time_end = await get_device_subscription_end_time(user_id, device)
@@ -669,12 +669,14 @@ async def pay_to_proceed(call):
                     await send_message_with_deletion(call.message.chat.id,f"⏳ Время окончания вашей подписки для {device}: {user_endtime_device_str}",reply_markup=markup)
                     break
                 elif status == 'canceled':
+                    print(4)
                     await send_message_with_deletion(call.message.chat.id, text="❌ Платёж был отменён.")
                     break
                 else:
                     await asyncio.sleep(5)
                     attempts += 1
 
+            print(1)
             if attempts == max_attempts:
                 await send_message_with_deletion(call.message.chat.id, text="❌Истекло время ожидания оплаты. Попробуйте снова.",reply_markup=markup)
         else:
