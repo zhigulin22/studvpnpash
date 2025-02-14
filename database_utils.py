@@ -51,8 +51,9 @@ async def create_database():
                         telegram_id INTEGER PRIMARY KEY,
                         message_id INTEGER,  -- Добавляем столбец для хранения идентификатора чата
                         referral_count INTEGER DEFAULT 0,
+                        is_agree BOOLEAN DEFAULT FALSE,
                         referrer_id INTEGER,
-                        FOREIGN KEY (referrer_id) REFERENCES user_referrals(telegram_id)  -- Ссылка на реферера
+                        FOREIGN KEY (referrer_id) REFERENCES user_referrals(telegram_id)
                     )
                 """)
 
@@ -83,7 +84,7 @@ async def create_database():
 # Пример вызова функции
 
 
-async def add_user(telegram_id , message_id, referral_count,referrer_id):
+async def add_user(telegram_id , message_id, referral_count,is_agree,referrer_id):
     """Adds a new user or updates an existing user."""
     conn = None
     try:
@@ -92,13 +93,14 @@ async def add_user(telegram_id , message_id, referral_count,referrer_id):
 
         # Вставляем или обновляем пользователя
         cursor.execute("""
-            INSERT INTO user_referrals (telegram_id, message_id, referral_count, referrer_id)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO user_referrals (telegram_id, message_id, referral_count, is_agree, referrer_id)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(telegram_id) DO UPDATE SET
                 message_id=excluded.message_id,
                 referral_count = excluded.referral_count,
+                is_agree = excluded.is_agree,
                 referrer_id = excluded.referrer_id
-        """, (telegram_id, message_id, referral_count, referrer_id))
+        """, (telegram_id, message_id, referral_count, is_agree,referrer_id))
 
         conn.commit()
         return telegram_id
@@ -153,6 +155,50 @@ async def get_referrer_id(telegram_id):
     return None  # Если реферер не найден
 
 
+#Получить сататус согласия с политикой
+async def get_agree_status(telegram_id):
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+
+    # Выполняем запрос для получения реферера
+    cursor.execute("""
+        SELECT is_agree FROM user_referrals WHERE telegram_id = ?
+    """, (telegram_id,))
+
+    # Получаем результат
+    result = cursor.fetchone()
+    conn.close()
+
+    # Если реферер найден, возвращаем его ID, иначе возвращаем None
+    if result:
+        return result[0]  # Возвращаем реферера
+    return None  # Если реферер не найден
+
+
+#Обновляем статус согласия
+async def update_agree_status(telegram_id, is_agree):
+    """Updates the referrer ID for a user."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+        # Выполняем обновление реферера
+        cursor.execute("""
+            UPDATE user_referrals
+            SET is_agree = ?
+            WHERE telegram_id = ?
+        """, (is_agree, telegram_id))
+
+        conn.commit()
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return False  # Возвращаем False в случае ошибки
+    finally:
+        if conn:
+            conn.close()
+
+
 
 async def add_device(telegram_id, device_index, device_type, is_paid=False, subscription_end_time=None):
     """Adds a device for a user, limiting to 4 devices."""
@@ -193,11 +239,13 @@ async def get_user_data(telegram_id):
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT message_id, referral_count, referrer_id FROM user_referrals WHERE telegram_id = ?", (telegram_id,))
+        cursor.execute("SELECT message_id, referral_count, is_agree, referrer_id FROM user_referrals WHERE telegram_id = ?", (telegram_id,))
         referral_result = cursor.fetchone()
         message_id = referral_result[0] if referral_result else 0
         referral_count = referral_result[1] if referral_result else 0
-        referral_id = referral_result[2] if referral_result else 0
+        is_agree = referral_result[2] if referral_result else 0
+        referral_id = referral_result[3] if referral_result else 0
+
 
         cursor.execute("""
             SELECT device_uuid, device_index, device_type, is_paid, subscription_end_time
@@ -224,6 +272,7 @@ async def get_user_data(telegram_id):
             'telegram_id': telegram_id,
             'message_id': message_id,
             'referral_count': referral_count,
+            'is_agree': is_agree,
             'referral_id': referral_id,
             'devices': device_data
         }
@@ -507,7 +556,7 @@ async def get_all_users():
 
 
 async def main():
-    #await delete_user(5839151088)
+    #await delete_user(5510185795)
     all_users = await get_all_users()
     print("Все пользователи:")
     for user in all_users:

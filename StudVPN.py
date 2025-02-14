@@ -18,7 +18,7 @@ import asyncio, asyncssh
 logging.getLogger('asyncssh').setLevel(logging.WARNING)
 from telebot import types
 from datetime import datetime, timedelta
-from database_utils import create_database, get_message_id_by_telegram_id, update_referrer_id,add_user, get_referrer_id, format_subscription_end_time,add_device,get_user_referral_count,get_device_subscription_end_time, delete_user, delete_device, get_device_payment_status,get_device_uuid,update_device_status, update_referral_count,get_user_data,get_all_users,check_user_exists
+from database_utils import create_database, get_agree_status,update_agree_status,get_message_id_by_telegram_id, update_referrer_id,add_user, get_referrer_id, format_subscription_end_time,add_device,get_user_referral_count,get_device_subscription_end_time, delete_user, delete_device, get_device_payment_status,get_device_uuid,update_device_status, update_referral_count,get_user_data,get_all_users,check_user_exists
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
 TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
@@ -224,13 +224,45 @@ async def user_has_registered_in_bot_be_link(user_id,user_name):
     chat_id_from_sender = await get_message_id_by_telegram_id(referrer_id)
     await send_message_with_deletion(chat_id_from_sender, f"😎Пользователь {user_name} зарегистрировался в боте и вам было начислено за это 7 дней бесплатного пользования.")
     chat_id_from_recipient = await get_message_id_by_telegram_id(user_id)
-    await send_message_with_deletion(chat_id_from_recipient, "🎁Вам добавлено бесплатно 7 суток пользования нашим ВПН на все устройства, за регистрацию в боте по реферальной ссылке🎁")
+    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 7 суток пользования нашим ВПН на все устройства, за регистрацию в боте по реферальной ссылке🎁")
 
 
 #Написать слова за регистраци
 async def user_has_registered_in_bot(user_id):
     chat_id_from_recipient = await get_message_id_by_telegram_id(user_id)
-    await send_message_with_deletion(chat_id_from_recipient, "🎁Вам добавлено бесплатно 14 суток пользования нашим ВПН на все устройства, за регистрацию в боте🎁")
+    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 14 суток пользования нашим ВПН на все устройства, за регистрацию в боте🎁")
+
+
+#Проверка соглашения с политикой
+@bot.callback_query_handler(func=lambda call: call.data == "is_agree")
+async def check_agree(call):
+    welcome_message = (
+        f"Рады приветствовать тебя в нашем ВПН \n\n"
+        """Очень часто при пользовании VPN возникают проблемы:
+🤬 Зависающее видео
+😥 Бесконечная реклама
+😡 Утечка данных
+😱 Риск блокировки из-за частой смены IP-адреса
+
+Но можно купить HugVPN и всего этого не будет👍
+💵2.5 рубля/день - мало что сейчас можно взять за такую цену) 
+
+🤙Также у нас очень привлекательная реферальная система, в которой можно очень легко набрать полгода и даже больше бесплатного пользования
+"""
+    )
+    user_id=call.from_user.id
+    await update_agree_status(user_id,True)
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
+    button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
+    button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
+    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
+    button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
+    button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+    markup.add(button1, button2)
+    markup.add(button3, button5)
+    markup.add(button4, button6)
+    await bot.send_message(user_id, welcome_message, reply_markup=markup)
 
 
 #Обрабатываем старт
@@ -263,31 +295,37 @@ async def start(message):
             pass
 
     if not await check_user_exists(user_id):
-        await add_user(user_id, message.chat.id, 0, referrer)
+        await add_user(user_id, message.chat.id, 0,False,referrer)
         await add_device(user_id, 1,"iPhone",False,"None")
         await add_device(user_id, 2, "Mac", False, "None")
         await add_device(user_id, 3, "Android", False, "None")
         await add_device(user_id, 4, "Windows", False, "None")
         if referrer is not None:
-            await dop_free_days(user_id, 7)
+            await dop_free_days(user_id, 21)
             await user_has_registered_in_bot_be_link(user_id, user_name)
         else:
-            await dop_free_days(user_id, 3)
+            await dop_free_days(user_id, 14)
             await user_has_registered_in_bot(user_id)
     # Создаем inline-клавиатуру
+    cur_status = await get_agree_status(user_id)
+    if cur_status == 1:
+        markup = types.InlineKeyboardMarkup()
+        button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
+        button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
+        button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
+        button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
+        button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
+        button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+        markup.add(button1, button2)
+        markup.add(button3, button5)
+        markup.add(button4, button6)
 
-    markup = types.InlineKeyboardMarkup()
-    button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
-    button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
-    button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
-    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
-    button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
-    button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    markup.add(button1,button2)
-    markup.add(button3,button5)
-    markup.add(button4,button6)
-
-    await bot.send_message(message.chat.id, welcome_message, reply_markup=markup)
+        await bot.send_message(user_id, welcome_message, reply_markup=markup)
+    else:
+        markup = types.InlineKeyboardMarkup()
+        button1 = types.InlineKeyboardButton("Согласен ✅", callback_data='is_agree')
+        markup.add(button1)
+        await bot.send_message(message.chat.id, "Чтобы продолжить использование сервиса, пожалуйста, ознакомьтесь с нашей политикой конфиденциальности и подтвердите свое согласие.\nhttps://telegra.ph/Usloviya-ispolzovaniya-i-Politika-konfidencialnosti-VPN-bota-HugVPN-02-14",reply_markup=markup)
 
 
 
@@ -694,7 +732,7 @@ async def referral_program(call):
     button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button1)
     markup.add(button2)
-    await send_message_with_deletion(call.message.chat.id, f"🤙 Ваша реферальная ссылка: {referral_link}\n\n1️⃣ Если человек нажмет кнопку Start по вашей ссылке, вам и ему начислится по 7 дней бесплатно\n2️⃣ Еесли человек оформит любую подписку по вашей ссылке, начислится 14 дней\nВсе дни складываются, поэтому можно раздать ссылки друзьям и получить год бесплатного пользования", markup)
+    await send_message_with_deletion(call.message.chat.id, f"🤙 Ваша реферальная ссылка: {referral_link}\n\n1️⃣ Если человек нажмет кнопку Start по вашей ссылке, вам и ему начислится по 7 дней бесплатно\n2️⃣ Если человек оформит любую подписку по вашей ссылке, начислится 14 дней\n\nВсе дни складываются, поэтому можно раздать ссылки друзьям и получить год бесплатного пользования", markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "col_ref")
@@ -722,12 +760,21 @@ async def support(call):
 
 @bot.message_handler(commands=['help'])
 async def help_command(message):
-    await send_message_with_deletion(message.chat.id, """
-        👉Задай вопрос, который тебя интересует.         
-Тебе ответит первый освободившийся модератор 👨‍🔧
+    user_id=message.from_user.id
+    cur_status = await get_agree_status(user_id)
+    if cur_status == 1:
+        await send_message_with_deletion(message.chat.id, """
+            👉Задай вопрос, который тебя интересует.         
+    Тебе ответит первый освободившийся модератор 👨‍🔧
+    
+    @HugVPN_Support
+        """)
+    else:
+        markup = types.InlineKeyboardMarkup()
+        button2 = types.InlineKeyboardButton("Согласен", callback_data='is_agree')
+        markup.add(button2)
+        await send_message_with_deletion(user_id,"Нужно согласие",reply_markup=markup)
 
-@HugVPN_Support
-    """)
 
 
 
@@ -774,9 +821,7 @@ async def check_subscriptions_and_remove_expired():
                     """, (device_uuid,))
 
                 cur=now-expiry_date
-                if cur.days<3:
-                    mes_id=get_message_id_by_telegram_id()
-                    bot.send_message()
+
 
         conn.commit()
         conn.close()
