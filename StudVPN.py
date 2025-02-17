@@ -21,7 +21,8 @@ from datetime import datetime, timedelta
 from database_utils import create_database, get_agree_status,update_agree_status,get_message_id_by_telegram_id, update_referrer_id,add_user, get_referrer_id, format_subscription_end_time,add_device,get_user_referral_count,get_device_subscription_end_time, delete_user, delete_device, get_device_payment_status,get_device_uuid,update_device_status, update_referral_count,get_user_data,get_all_users,check_user_exists
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
-TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
+TELEGRAM_TOKEN = '7795571968:AAFWPrFsFxo3M0Pu7NDweHqB9-RiTogFr3Y'
+#8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 SERVER_IP = '77.239.100.20'
 DATABASE_FILE = "vpn_keys.db"
 SERVER_PORT = 443  # Обычно 22 для SSH
@@ -224,13 +225,13 @@ async def user_has_registered_in_bot_be_link(user_id,user_name):
     chat_id_from_sender = await get_message_id_by_telegram_id(referrer_id)
     await send_message_with_deletion(chat_id_from_sender, f"😎Пользователь {user_name} зарегистрировался в боте и вам было начислено за это 7 дней бесплатного пользования.")
     chat_id_from_recipient = await get_message_id_by_telegram_id(user_id)
-    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 7 суток пользования нашим ВПН на все устройства, за регистрацию в боте по реферальной ссылке🎁")
+    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 38 суток пользования нашим ВПН на все устройства, за регистрацию в боте по реферальной ссылке🎁")
 
 
 #Написать слова за регистраци
 async def user_has_registered_in_bot(user_id):
     chat_id_from_recipient = await get_message_id_by_telegram_id(user_id)
-    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 14 суток пользования нашим ВПН на все устройства, за регистрацию в боте🎁")
+    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 30 суток пользования нашим ВПН на все устройства, за регистрацию в боте🎁")
 
 
 #Проверка соглашения с политикой
@@ -301,10 +302,10 @@ async def start(message):
         await add_device(user_id, 3, "Android", False, "None")
         await add_device(user_id, 4, "Windows", False, "None")
         if referrer is not None:
-            await dop_free_days(user_id, 21)
+            await dop_free_days(user_id, 38)
             await user_has_registered_in_bot_be_link(user_id, user_name)
         else:
-            await dop_free_days(user_id, 14)
+            await dop_free_days(user_id, 30)
             await user_has_registered_in_bot(user_id)
     # Создаем inline-клавиатуру
     cur_status = await get_agree_status(user_id)
@@ -773,7 +774,7 @@ async def help_command(message):
         markup = types.InlineKeyboardMarkup()
         button2 = types.InlineKeyboardButton("Согласен", callback_data='is_agree')
         markup.add(button2)
-        await send_message_with_deletion(user_id,"Нужно согласие",reply_markup=markup)
+        await send_message_with_deletion(user_id,"Чтобы продолжить использование сервиса, пожалуйста, ознакомьтесь с нашей политикой конфиденциальности и подтвердите свое согласие.\nhttps://telegra.ph/Usloviya-ispolzovaniya-i-Politika-konfidencialnosti-VPN-bota-HugVPN-02-14",reply_markup=markup)
 
 
 
@@ -841,7 +842,10 @@ async def main():
     await setup_menu()  # Настраиваем команды бота
     await create_database()  # Создаём базу данных
     await start_scheduler()  #
-    await bot.polling()
+    try:
+        await bot.polling(none_stop=True)
+    except Exception as e:
+        logging.error(e)
 
 
 
