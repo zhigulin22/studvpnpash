@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from database_utils import create_database, get_agree_status,update_agree_status,get_message_id_by_telegram_id, update_referrer_id,add_user, get_referrer_id, format_subscription_end_time,add_device,get_user_referral_count,get_device_subscription_end_time, delete_user, delete_device, get_device_payment_status,get_device_uuid,update_device_status, update_referral_count,get_user_data,get_all_users,check_user_exists
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
-TELEGRAM_TOKEN = '7795571968:AAFWPrFsFxo3M0Pu7NDweHqB9-RiTogFr3Y'
+TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFWPrFsFxo3M0Pu7NDweHqB9-RiTogFr3Y
 SERVER_IP = '77.239.100.20'
