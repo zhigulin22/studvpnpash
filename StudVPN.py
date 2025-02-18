@@ -21,7 +21,8 @@ from datetime import datetime, timedelta
 from database_utils import create_database, get_agree_status,update_agree_status,get_message_id_by_telegram_id, update_referrer_id,add_user, get_referrer_id, format_subscription_end_time,add_device,get_user_referral_count,get_device_subscription_end_time, delete_user, delete_device, get_device_payment_status,get_device_uuid,update_device_status, update_referral_count,get_user_data,get_all_users,check_user_exists
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
-TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
+TELEGRAM_TOKEN = '7795571968:AAFWPrFsFxo3M0Pu7NDweHqB9-RiTogFr3Y'
+ADMIN_IDS = [5510185795]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFWPrFsFxo3M0Pu7NDweHqB9-RiTogFr3Y
 SERVER_IP = '77.239.100.20'
@@ -40,6 +41,7 @@ logging.basicConfig(
 
 last_message_ids = {}
 user_payment_status = {}
+admin_sms={}
 
 async def get_vless_link(user_id,device_type):
     user_uuid_from_device = await get_device_uuid(user_id,device_type)
@@ -165,8 +167,6 @@ async def update_config_on_server(new_uuid):
 
 async def dop_free_days(user_id, col_days):
     referrer_id = await get_referrer_id(user_id)
-    if referrer_id == 0:
-        return
     device_comb=["iPhone", "Android", "Mac", "Windows"]
     for device in device_comb:
         cur_time_end = await get_device_subscription_end_time(user_id, device)
@@ -186,6 +186,8 @@ async def dop_free_days(user_id, col_days):
             if not cur_status:
                 await update_config_on_server(device_uuid)
     if referrer_id is None:
+        return
+    if referrer_id == 0:
         return
     for device in device_comb:
         cur_time_end = await get_device_subscription_end_time(referrer_id, device)
@@ -285,6 +287,7 @@ async def start(message):
 🤙Также у нас очень привлекательная реферальная система, в которой можно очень легко набрать полгода и даже больше бесплатного пользования
 """
     )
+    print(2)
     user_id = message.from_user.id  # Получаем user_id
     referrer = None
     if " " in message.text:
@@ -295,7 +298,6 @@ async def start(message):
                 referrer = referrer_candidate
         except ValueError:
             pass
-
     if not await check_user_exists(user_id):
         await add_user(user_id, message.chat.id, 0,False,referrer)
         await add_device(user_id, 1,"iPhone",False,"None")
@@ -309,6 +311,7 @@ async def start(message):
             await dop_free_days(user_id, 30)
             await user_has_registered_in_bot(user_id)
     # Создаем inline-клавиатуру
+    print(1)
     cur_status = await get_agree_status(user_id)
     if cur_status == 1:
         markup = types.InlineKeyboardMarkup()
@@ -363,7 +366,13 @@ async def buy_vpn(call):
 @bot.callback_query_handler(func=lambda call: call.data == "instruction")
 async def buy_vpn(call):
     markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("📱 Iphone", url='https://t.me/HugVPN/41')
+    button2 = types.InlineKeyboardButton("📲 Android", url='https://t.me/HugVPN/42')
+    button3 = types.InlineKeyboardButton("💻 Mac", url='https://t.me/HugVPN/43')
+    button4 = types.InlineKeyboardButton("🖥️ Windows", url='https://t.me/HugVPN/45')
     button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+    markup.add(button1,button2)
+    markup.add(button3,button4)
     markup.add(button5)
     await send_message_with_deletion(call.message.chat.id,"Выберите устройство, для которого хотите получить инструкцию:",reply_markup=markup)
 
@@ -481,7 +490,12 @@ async def choose_subscription_duration_mounth(call):
                     await user_has_payed_in_bot_be_link(user_id,user_name)
                     cur_time = await get_device_subscription_end_time(user_id, device)
                     cur_time_end1 = await format_subscription_end_time(str(cur_time))
-                    await send_message_with_deletion(call.message.chat.id,f"⏳ Время окончания вашей подписки для {device}: {cur_time_end1}",reply_markup=markup)
+                    markup1 = types.InlineKeyboardMarkup()
+                    button1 =types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+                    button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+                    markup1.add(button1)
+                    markup1.add(button2)
+                    await send_message_with_deletion(call.message.chat.id,f"⏳ Время окончания вашей подписки для {device}: {cur_time_end1}",reply_markup=markup1)
                     break
                 elif status == 'canceled':
                     await send_message_with_deletion(call.message.chat.id, text="❌ Платёж был отменён.",reply_markup=markup)
@@ -558,8 +572,9 @@ async def learn_key(call):
         await bot.send_message(call.message.chat.id, text=f"👉 Ваша VLESS ссылка для {device}: ```{current_link}```", parse_mode='MarkdownV2')
         markup = types.InlineKeyboardMarkup()
         button1 = types.InlineKeyboardButton("⏳ Продлить подписку", callback_data='proceed_subscription')
+        button3 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
         button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
-        markup.add(button1)
+        markup.add(button1,button3)
         markup.add(button2)
         await send_message_with_deletion(call.message.chat.id, f"""⏳ Время окончания вашей подписки для {device}: {user_endtime_device}\nВыберите действие: """, markup)
     else:
@@ -706,7 +721,12 @@ async def pay_to_proceed(call):
                     await bot.send_message(call.message.chat.id, text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка для {device}: ```{vless_link}```", parse_mode='MarkdownV2')
                     user_endtime_device = await get_device_subscription_end_time(user_id, device)
                     user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
-                    await send_message_with_deletion(call.message.chat.id,f"⏳ Время окончания вашей подписки для {device}: {user_endtime_device_str}",reply_markup=markup)
+                    markup1 = types.InlineKeyboardMarkup()
+                    button1 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+                    button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+                    markup1.add(button1)
+                    markup1.add(button2)
+                    await send_message_with_deletion(call.message.chat.id,f"⏳ Время окончания вашей подписки для {device}: {user_endtime_device_str}",reply_markup=markup1)
                     break
                 elif status == 'canceled':
                     print(4)
@@ -779,6 +799,30 @@ async def help_command(message):
 
 
 
+#Панель админа
+@bot.message_handler(commands=['admin'])
+async def admin_menu(message):
+    # Проверить, является ли пользователь администратором
+    if message.from_user.id not in ADMIN_IDS:
+        await bot.send_message(message.chat.id, "🙅‍♂️ У вас нет доступа к административной панели.")
+        return
+
+    # Админ-меню
+    markup = types.InlineKeyboardMarkup()
+    btn1 = types.InlineKeyboardButton("📋 Получить данные о пользователе", callback_data="get_user_info")
+    btn2 = types.InlineKeyboardButton("✏️ Изменить данные пользователя", callback_data="edit_user_data")
+    btn3 = types.InlineKeyboardButton("➕ Добавить дни всем пользователям", callback_data="add_days_to_all")
+    btn5 = types.InlineKeyboardButton("📢 Массовая рассылка", callback_data="mass_message")
+    btn4 = types.InlineKeyboardButton("📣 Узнать кол-во пользователей в базе данных", callback_data="col_user")
+    markup.add(btn1)
+    markup.add(btn2)
+    markup.add(btn3)
+    markup.add(btn5)
+    markup.add(btn4)
+    await bot.send_message(message.chat.id, "🔧 Админ-панель", reply_markup=markup)
+
+
+
 
 
 async def setup_menu():
@@ -787,15 +831,199 @@ async def setup_menu():
         types.BotCommand("help", "☎️ Помощь")
     ]
     try:
-       await bot.set_my_commands(commands)
-       logging.info("Команды меню успешно установлены.")
+        await bot.set_my_commands(commands)
+        logging.info("Команды меню успешно установлены.")
     except Exception as e:
         logging.error(f"Ошибка при установке команд меню: {e}")
+
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "col_user")
+async def get_user_info(call):
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+        success = 0
+
+        cursor.execute("SELECT telegram_id FROM user_referrals")
+        telegram_ids = [row[0] for row in cursor.fetchall()]  # Extract Telegram IDs
+        col = len(telegram_ids)
+        await bot.send_message(call.message.chat.id, f"Сейчас в базе данных: {col} пользователей зарегистрировано")
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return []  # Return an empty list in case of an error
+    finally:
+        if conn:
+            conn.close()
+
+
+#Добавление дней всем пользователям ---
+@bot.callback_query_handler(func=lambda call: call.data == "add_days_to_all")
+async def start_add_days_to_all(call: types.CallbackQuery):
+    """Запрос на добавление дней всем пользователям."""
+    user_id = call.from_user.id
+    admin_sms[user_id] = "add_days_to_all"  # Устанавливаем текущую задачу
+    await bot.send_message(call.message.chat.id, "Введите количество дней, которые нужно добавить всем пользователям:")
+# --- Получение информации о пользователе ---
+@bot.callback_query_handler(func=lambda call: call.data == "get_user_info")
+async def get_user_info(call: types.CallbackQuery):
+    """Запрос на получение информации о пользователе."""
+    user_id = call.from_user.id
+    admin_sms[user_id] = "get_inf"  # Устанавливаем текущий действие
+    await bot.send_message(call.message.chat.id, "Введите Telegram ID пользователя, чтобы получить данные:")
+
+# --- Изменение данных пользователя ---
+@bot.callback_query_handler(func=lambda call: call.data == "edit_user_data")
+async def edit_user_data(call: types.CallbackQuery):
+    """Запрос на изменение данных пользователя."""
+    user_id = call.from_user.id
+    admin_sms[user_id] = "edit_inf"  # Устанавливаем текущую задачу
+    await bot.send_message(call.message.chat.id, "Введите Telegram ID пользователя, данные которого вы хотите изменить:")
+
+# --- Массовая рассылка ---
+@bot.callback_query_handler(func=lambda call: call.data == "mass_message")
+async def mass_message(call: types.CallbackQuery):
+    """Запрос на массовую рассылку."""
+    user_id = call.from_user.id
+    admin_sms[user_id] = "mass_mes"  # Устанавливаем текущую задачу
+    await bot.send_message(call.message.chat.id, "Введите сообщение для массовой рассылки:")
+
+# --- Обработчик текстовых сообщений ---
+@bot.message_handler(func=lambda message: message.from_user.id in ADMIN_IDS)
+async def handle_admin_action(message: types.Message):
+    """Обработка действий администратора."""
+    user_id = message.from_user.id
+
+    # Проверяем, есть ли действие, назначенное админу
+    if user_id not in admin_sms:
+        await bot.send_message(message.chat.id, "❌ Вы не выбрали действие. Используйте /start для запуска.")
+        return
+
+    current_action = admin_sms[user_id]
+
+    # Получение информации о пользователе
+    if current_action == "add_days_to_all":
+        try:
+            days_to_add = int(message.text.strip())  # Преобразуем ввод в число
+            conn = sqlite3.connect(DATABASE_FILE)
+            cursor = conn.cursor()
+
+            # Обновляем подписку всем пользователям
+            try:
+                cursor.execute("SELECT telegram_id FROM user_referrals")
+                telegram_ids = [row[0] for row in cursor.fetchall()]
+                total_users = len(telegram_ids)
+                if total_users == 0:
+                    await bot.send_message(
+                        message.chat.id, "❌ Пользователи не найдены в базе данных."
+                    )
+                    return
+
+                # Обновляем каждому пользователю количество дней
+                for user in telegram_ids:
+                    await dop_free_days(user, days_to_add)  # Заглушка для обновления дней подписки
+
+                await bot.send_message(
+                    message.chat.id,
+                    f"✅ Успешно добавлено {days_to_add} дней всем {total_users} пользователям!"
+                )
+
+            except sqlite3.Error as e:
+                await bot.send_message(message.chat.id, f"❌ Ошибка базы данных: {e}")
+            finally:
+                conn.close()
+        except ValueError:
+            await bot.send_message(message.chat.id, "❌ Введите корректное число.")
+        finally:
+            del admin_sms[user_id]  # Очищаем задачу
+    elif current_action == "get_inf":
+        target_user_id = message.text.strip()
+        if not await check_user_exists(target_user_id):
+            await bot.send_message(
+                message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
+            )
+        else:
+            # Формирование информации о пользователе
+            user_info = f"""
+            👤 Полная информация о пользователе {target_user_id}:
+            Кол-во рефералов: {await get_user_referral_count(target_user_id)}
+            Пригласивший человек: {await get_referrer_id(target_user_id)}
+            Подписки:
+            - iPhone: {await get_device_subscription_end_time(target_user_id, "iPhone")}
+            - Android: {await get_device_subscription_end_time(target_user_id, "Android")}
+            - Mac: {await get_device_subscription_end_time(target_user_id, "Mac")}
+            - Windows: {await get_device_subscription_end_time(target_user_id, "Windows")}
+            """
+            await bot.send_message(message.chat.id, user_info)
+
+        # Очищаем задачу
+        del admin_sms[user_id]
+
+    # Изменение данных пользователя
+    elif current_action == "edit_inf":
+        target_user_id = message.text.strip()
+        if not await check_user_exists(target_user_id):
+            await bot.send_message(
+                message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
+            )
+        else:
+            admin_sms[user_id] = {"action": "add_days", "target_user_id": target_user_id}
+            await bot.send_message(
+                message.chat.id,
+                f"Пользователь {target_user_id} найден. Введите количество дней для добавления:",
+            )
+
+    # Добавление дней пользователю
+    elif isinstance(current_action, dict) and current_action.get("action") == "add_days":
+        try:
+            days_to_add = int(message.text.strip())
+            target_user_id = current_action["target_user_id"]
+            await dop_free_days(target_user_id, days_to_add)
+            await bot.send_message(
+                message.chat.id,
+                f"✅ Пользователю {target_user_id} добавлено {days_to_add} дней подписки.",
+            )
+        except ValueError:
+            await bot.send_message(message.chat.id, "❌ Введите корректное число дней.")
+        finally:
+            del admin_sms[user_id]
+
+    # Массовая рассылка
+    elif current_action == "mass_mes":
+        mass_message_text = message.text
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("SELECT telegram_id FROM user_referrals")
+            telegram_ids = [row[0] for row in cursor.fetchall()]  # ID пользователей
+            success = 0
+
+            for user in telegram_ids:
+                try:
+                    await bot.send_message(user, mass_message_text)
+                    success += 1
+                except Exception as e:
+                    logging.error(f"Ошибка при отправке сообщения пользователю {user}: {e}")
+
+            await bot.send_message(
+                message.chat.id, f"✅ Сообщение отправлено {success} пользователям."
+            )
+        except sqlite3.Error as e:
+            await bot.send_message(message.chat.id, f"❌ Ошибка базы данных: {e}")
+        finally:
+            conn.close()
+            del admin_sms[user_id]
+
+
+
 
 #Проверка базы данных на окончание срока подписки
 async def check_subscriptions_and_remove_expired():
     try:
-        conn = sqlite3.connect('vpn_keys.db')
+        conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
         # Проверка истёкших подписок
         cursor.execute("""
@@ -843,10 +1071,7 @@ async def main():
     await setup_menu()  # Настраиваем команды бота
     await create_database()  # Создаём базу данных
     await start_scheduler()  #
-    try:
-        await bot.polling(none_stop=True)
-    except Exception as e:
-        logging.error(e)
+    await bot.polling(none_stop=True)
 
 
 

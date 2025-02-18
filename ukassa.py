@@ -2,8 +2,8 @@ import requests
 import uuid
 
 # Данные ЮKassa
-SHOP_ID = '1026363'
-API_KEY = 'test_ciER8rHNNK-VNLG7AIzADQHcpCBoobz-LaBEpiBrXmE'
+SHOP_ID = '1020973'
+API_KEY = 'live_nGF4J8peJ_OchoHNjvknefVHHrS7Szh9GSLgsmNQ_sE'
 RETURN_URL = 'https://t.me/HugVPN_bot'
 
 async def create_payment(amount, description):
