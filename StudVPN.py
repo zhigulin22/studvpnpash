@@ -245,37 +245,6 @@ async def user_has_registered_in_bot(user_id):
     await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 30 суток пользования нашим ВПН на все устройства, за регистрацию в боте🎁")
 
 
-#Проверка соглашения с политикой
-@bot.callback_query_handler(func=lambda call: call.data == "is_agree")
-async def check_agree(call):
-    welcome_message = (
-        f"Рады приветствовать тебя в нашем ВПН \n\n"
-        """Очень часто при пользовании VPN возникают проблемы:
-🤬 Зависающее видео
-😥 Бесконечная реклама
-😡 Утечка данных
-😱 Риск блокировки из-за частой смены IP-адреса
-
-Но можно купить HugVPN и всего этого не будет👍
-💵2.5 рубля/день - мало что сейчас можно взять за такую цену) 
-
-🤙Также у нас очень привлекательная реферальная система, в которой можно очень легко набрать полгода и даже больше бесплатного пользования
-"""
-    )
-    user_id=call.from_user.id
-    await update_agree_status(user_id,True)
-    markup = types.InlineKeyboardMarkup()
-    button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
-    button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
-    button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
-    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
-    button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
-    button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    markup.add(button1, button2)
-    markup.add(button3, button5)
-    markup.add(button4, button6)
-    await bot.send_message(user_id, welcome_message, reply_markup=markup)
-
 
 #Обрабатываем старт
 @bot.message_handler(commands=['start'])
@@ -332,9 +301,11 @@ async def start(message):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+    button7 = types.InlineKeyboardButton("🔄 Поменять ключ", callback_data='change_link')
     markup.add(button1, button2)
-    markup.add(button3, button5)
+    markup.add(button3, button7)
     markup.add(button4, button6)
+    markup.add(button5)
 
     await bot.send_message(user_id, welcome_message, reply_markup=markup)
 
@@ -402,7 +373,7 @@ async def buy_vpn(call):
 
 
 
-
+#Купить впн
 @bot.callback_query_handler(func=lambda call: call.data in ["iPhone", "Android", "Mac", "Windows"])
 async def choose_mod(call):
     device = call.data
@@ -416,7 +387,7 @@ async def choose_mod(call):
         button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
         markup.add(button1)
         markup.add(button2)
-        await send_message_with_deletion(call.message.chat.id, f"У вас уже есть подписка для {device} 🟢.\n\nВремя окончания вашей подписки для {device}: {user_endtime_device_str}\n\nХотите ее продлить?",markup)
+        await send_message_with_deletion(call.message.chat.id, f"У вас уже есть подписка для {device} 🟢.\nМожите посмотреть ключ во вкладе Мой ВПН\n\nВремя окончания вашей подписки для {device}: {user_endtime_device_str}\n\nХотите ее продлить?",markup)
     else:
         markup = types.InlineKeyboardMarkup()
         button1 = types.InlineKeyboardButton("- 1 месяц - 99₽", callback_data=f'1month1|{device}')
@@ -516,6 +487,57 @@ async def choose_subscription_duration_mounth(call):
             await send_message_with_deletion(call.message.chat.id, text="❌Произошла ошибка при создании платежа. Попробуйте позже.",reply_markup=markup)
 
 
+
+#Помеять ссылку
+@bot.callback_query_handler(func=lambda call: call.data == "change_link")
+async def change_link_vpn(call):
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("📱 iPhone", callback_data=f'iPhone_change|iPhone')
+    button2 = types.InlineKeyboardButton("📲 Android", callback_data=f'Android_change|Android')
+    button3 = types.InlineKeyboardButton("💻 Mac", callback_data='Mac_change|Mac')
+    button4 = types.InlineKeyboardButton("🖥️ Windows", callback_data='Windows_change|Windows')
+    button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+    markup.add(button1)
+    markup.add(button2)
+    markup.add(button3)
+    markup.add(button4)
+    markup.add(button5)
+    await send_message_with_deletion(call.message.chat.id, "👇 Выберите устройство, для которого хотите поменять свой ключ:", markup)
+
+
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("iPhone_change") or call.data.startswith("Mac_change") or call.data.startswith("Android_change") or call.data.startswith("Windows_change"))
+async def learn_key(call):
+    data = call.data.split("|")
+    up = data[0]
+    device = data[1]
+    user_id=call.from_user.id
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+    markup.add(button1)
+    fl=0
+    if device == "iPhone":
+        fl=1
+    elif device == "Android":
+        fl=2
+    elif device == "Mac":
+        fl=3
+    elif device == "Windows":
+        fl=4
+    cur_device_uuid=await get_device_uuid(user_id,device)
+    cur_device_time=await get_device_subscription_end_time(user_id,device)
+    cur_status_device=await get_device_payment_status(user_id,device)
+    await delete_device(cur_device_uuid)
+    await add_device(user_id,fl,device,cur_status_device,cur_device_time)
+    new_link = await get_vless_link(user_id,device)
+    user_endtime_device = await get_device_subscription_end_time(user_id, device)
+    user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
+    await bot.send_message(user_id,f"```{new_link}```",parse_mode='MarkdownV2')
+    await send_message_with_deletion(user_id, f"Ваша новая VLESS ссылка для {device}.\nВремя окончания подписки: {user_endtime_device_str}", reply_markup=markup)
+
+
+
 #Обработчик команды "Назад"
 @bot.callback_query_handler(func=lambda call: call.data == "main_menu")
 async def back_to_main_menu(call):
@@ -542,9 +564,11 @@ async def back_to_main_menu(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+    button7 = types.InlineKeyboardButton("🔄 Поменять ключ", callback_data='change_link')
     markup.add(button1, button2)
-    markup.add(button3, button5)
+    markup.add(button3, button7)
     markup.add(button4, button6)
+    markup.add(button5)
     await send_message_with_deletion(call.message.chat.id,welcome_message, markup)
 
 #Узнать свой ВПН
@@ -757,7 +781,7 @@ async def pay_to_proceed(call):
 @bot.callback_query_handler(func=lambda call: call.data == "referral")
 async def referral_program(call):
     user_name = call.from_user.id
-    referral_link = f"https://t.me/@HugVPN_bot?start={user_name}"
+    referral_link = f"https://t.me/HugVPN_bot?start={user_name}"
     markup = types.InlineKeyboardMarkup()
     button1=types.InlineKeyboardButton("👉 Узнать свою статистику", callback_data='col_ref')
     button2 = types.InlineKeyboardButton("🌟 Топ 10 амбасадоров", callback_data='top_ref')
@@ -833,13 +857,24 @@ async def referral_program(call):
 @bot.message_handler(commands=['help'])
 async def help_command(message):
     user_id=message.from_user.id
-    await send_message_with_deletion(message.chat.id, """
+    await send_message_with_deletion(message.chat.id, f"""
         👉Посмотреть как подкючить выданый ключ можно в инструкциях на Главной странице.
-        
+
 👨‍🔧Если вопрос по другой теме, задай его и тебе ответит первый освободившийся администратор.‍🔧
 
 @HugVPN_Support
     """)
+
+
+@bot.message_handler(commands=['policy'])
+async def privat_policy(message):
+    user_id = message.from_user.id
+    await send_message_with_deletion(message.chat.id, """
+        👉Политика конфиденциальности бота
+https://telegra.ph/Usloviya-ispolzovaniya-i-Politika-konfidencialnosti-VPN-bota-HugVPN-02-14
+    """)
+
+
 
 
 #Панель админа
@@ -859,7 +894,6 @@ async def admin_menu(message):
     btn11 = types.InlineKeyboardButton("📋 Получить тг айди по username", callback_data="get_tg_id")
     btn5 = types.InlineKeyboardButton("📢 Массовая рассылка", callback_data="mass_message")
     btn4 = types.InlineKeyboardButton("📣 Узнать кол-во пользователей в базе данных", callback_data="col_user")
-    btn6 = types.InlineKeyboardButton("Получить базу данных", callback_data="get_user")
     markup.add(backup_button)
     markup.add(btn1)
     markup.add(btn2)
@@ -867,7 +901,6 @@ async def admin_menu(message):
     markup.add(btn11)
     markup.add(btn5)
     markup.add(btn4)
-    markup.add(btn6)
     await send_message_with_deletion(message.chat.id, "🔧 Админ-панель", reply_markup=markup)
 
 
@@ -877,7 +910,8 @@ async def admin_menu(message):
 async def setup_menu():
     commands = [
         types.BotCommand("start", "✅ Главное меню"),
-        types.BotCommand("help", "☎️ Помощь")
+        types.BotCommand("help", "☎️ Помощь"),
+        types.BotCommand("policy", "📄 Политика конфиденциальности")
     ]
     try:
         await bot.set_my_commands(commands)
@@ -908,12 +942,6 @@ async def get_user_info(call):
             conn.close()
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "get_user")
-async def get_user(call: types.CallbackQuery):
-    user_id=call.from_user.id
-    all_users = await get_all_users()
-    for user in all_users:
-        await bot.send_message(user_id,user)
 #Добавление дней всем пользователям ---
 @bot.callback_query_handler(func=lambda call: call.data == "add_days_to_all")
 async def start_add_days_to_all(call: types.CallbackQuery):
@@ -1281,7 +1309,7 @@ async def start_scheduler():
 
 async def main():
     await setup_menu()  # Настраиваем команды бота
-    # await update_database_schema()
+    #await update_database_schema()
     #await create_database()  # Создаём базу данных
     await start_scheduler()  #
     await bot.polling(none_stop=True)
