@@ -24,10 +24,10 @@ from database_utils import create_database, get_username,update_username,get_tel
 from update_schema import update_database_schema
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
-TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
+TELEGRAM_TOKEN = '7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE'
 ADMIN_IDS = [5510185795,1120515812]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
-#7795571968:AAFWPrFsFxo3M0Pu7NDweHqB9-RiTogFr3Y
+#7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
 SERVER_IP = '77.239.100.20'
 DATABASE_FILE = "vpn5_keys.db"
 SERVER_PORT = 443  # Обычно 22 для SSH
@@ -295,7 +295,6 @@ async def start(message):
         
 🟢 Ваш профиль активен"""
     )
-    print(2)
     user_id = message.from_user.id  # Получаем user_id
     user_name_id=message.from_user.username
     referrer = None
@@ -308,7 +307,7 @@ async def start(message):
         except ValueError:
             pass
     if not await check_user_exists(user_id):
-        await add_user(user_id, user_name_id, 0,0,False,referrer)
+        await add_user(user_id, user_name_id, 0,0,True,referrer)
         await add_device(user_id, 1,"iPhone",False,"None")
         await add_device(user_id, 2, "Mac", False, "None")
         await add_device(user_id, 3, "Android", False, "None")
@@ -326,26 +325,18 @@ async def start(message):
     if cur_user_name != user_name_id:
         await update_username(user_id,user_name_id)
 
-    cur_status = await get_agree_status(user_id)
-    if cur_status == 1:
-        markup = types.InlineKeyboardMarkup()
-        button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
-        button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
-        button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
-        button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
-        button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
-        button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-        markup.add(button1, button2)
-        markup.add(button3, button5)
-        markup.add(button4, button6)
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
+    button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
+    button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
+    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
+    button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
+    button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+    markup.add(button1, button2)
+    markup.add(button3, button5)
+    markup.add(button4, button6)
 
-        await bot.send_message(user_id, welcome_message, reply_markup=markup)
-    else:
-        markup = types.InlineKeyboardMarkup()
-        button1 = types.InlineKeyboardButton("Согласен ✅", callback_data='is_agree')
-        markup.add(button1)
-        await bot.send_message(message.chat.id, "Чтобы продолжить использование сервиса, пожалуйста, ознакомьтесь с нашей политикой конфиденциальности и подтвердите свое согласие.\nhttps://telegra.ph/Usloviya-ispolzovaniya-i-Politika-konfidencialnosti-VPN-bota-HugVPN-02-14",reply_markup=markup)
-
+    await bot.send_message(user_id, welcome_message, reply_markup=markup)
 
 
 #Выдает информацию о нас
@@ -842,21 +833,13 @@ async def referral_program(call):
 @bot.message_handler(commands=['help'])
 async def help_command(message):
     user_id=message.from_user.id
-    cur_status = await get_agree_status(user_id)
-    if cur_status == 1:
-        await send_message_with_deletion(message.chat.id, """
-            👉Посмотреть как подкючить выданый ключ можно в инструкциях на Главной странице.
-            
+    await send_message_with_deletion(message.chat.id, """
+        👉Посмотреть как подкючить выданый ключ можно в инструкциях на Главной странице.
+        
 👨‍🔧Если вопрос по другой теме, задай его и тебе ответит первый освободившийся администратор.‍🔧
-    
-@HugVPN_Support
-        """)
-    else:
-        markup = types.InlineKeyboardMarkup()
-        button2 = types.InlineKeyboardButton("Согласен", callback_data='is_agree')
-        markup.add(button2)
-        await send_message_with_deletion(user_id,"Чтобы продолжить использование сервиса, пожалуйста, ознакомьтесь с нашей политикой конфиденциальности и подтвердите свое согласие.\nhttps://telegra.ph/Usloviya-ispolzovaniya-i-Politika-konfidencialnosti-VPN-bota-HugVPN-02-14",reply_markup=markup)
 
+@HugVPN_Support
+    """)
 
 
 #Панель админа
@@ -1298,7 +1281,7 @@ async def start_scheduler():
 
 async def main():
     await setup_menu()  # Настраиваем команды бота
-    await update_database_schema()
+    # await update_database_schema()
     #await create_database()  # Создаём базу данных
     await start_scheduler()  #
     await bot.polling(none_stop=True)
