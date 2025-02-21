@@ -41,38 +41,35 @@ async def create_database():
     """Creates the database and tables."""
     conn = None
     try:
-        # Создаем соединение с базой данных
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
 
-        # Создаем таблицу user_referrals
         cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS user_referrals (
-                        telegram_id INTEGER PRIMARY KEY,
-                        message_id INTEGER,  -- Добавляем столбец для хранения идентификатора чата
-                        referral_count INTEGER DEFAULT 0,
-                        is_agree BOOLEAN DEFAULT FALSE,
-                        referrer_id INTEGER,
-                        FOREIGN KEY (referrer_id) REFERENCES user_referrals(telegram_id)
-                    )
-                """)
+            CREATE TABLE IF NOT EXISTS user_referrals (
+                telegram_id INTEGER PRIMARY KEY,
+                user_name TEXT, -- Изменено с message_id на user_name
+                referral_count INTEGER DEFAULT 0,
+                start_count INTEGER DEFAULT 0, -- Новая колонка
+                is_agree BOOLEAN DEFAULT FALSE,
+                referrer_id INTEGER,
+                FOREIGN KEY (referrer_id) REFERENCES user_referrals(telegram_id)
+            )
+        """)
 
-        # Создаем таблицу user_devices
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_devices (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 telegram_id INTEGER,
                 device_uuid TEXT UNIQUE,
-                device_index INTEGER,  -- 1 to 4 to represent each device
-                device_type TEXT,       -- Device type (iPhone, Mac, Android, Windows)
+                device_index INTEGER,
+                device_type TEXT,
                 is_paid BOOLEAN DEFAULT FALSE,
                 subscription_end_time TEXT,
                 FOREIGN KEY (telegram_id) REFERENCES user_referrals(telegram_id),
-                UNIQUE (telegram_id, device_index)  -- Ensure only one device per index
+                UNIQUE (telegram_id, device_index)
             )
         """)
 
-        # Сохраняем изменения
         conn.commit()
         print("Database and tables created successfully.")
     except sqlite3.Error as e:
@@ -84,23 +81,23 @@ async def create_database():
 # Пример вызова функции
 
 
-async def add_user(telegram_id , message_id, referral_count,is_agree,referrer_id):
+async def add_user(telegram_id, user_name, referral_count, start_count, is_agree, referrer_id):
     """Adds a new user or updates an existing user."""
     conn = None
     try:
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
 
-        # Вставляем или обновляем пользователя
         cursor.execute("""
-            INSERT INTO user_referrals (telegram_id, message_id, referral_count, is_agree, referrer_id)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO user_referrals (telegram_id, user_name, referral_count, start_count, is_agree, referrer_id)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(telegram_id) DO UPDATE SET
-                message_id=excluded.message_id,
+                user_name=excluded.user_name,
                 referral_count = excluded.referral_count,
+                start_count = excluded.start_count,
                 is_agree = excluded.is_agree,
                 referrer_id = excluded.referrer_id
-        """, (telegram_id, message_id, referral_count, is_agree,referrer_id))
+        """, (telegram_id, user_name, referral_count, start_count, is_agree, referrer_id))
 
         conn.commit()
         return telegram_id
@@ -239,12 +236,13 @@ async def get_user_data(telegram_id):
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT message_id, referral_count, is_agree, referrer_id FROM user_referrals WHERE telegram_id = ?", (telegram_id,))
+        cursor.execute("SELECT user_name, referral_count,start_count, is_agree, referrer_id FROM user_referrals WHERE telegram_id = ?", (telegram_id,))
         referral_result = cursor.fetchone()
-        message_id = referral_result[0] if referral_result else 0
+        user_name = referral_result[0] if referral_result else 0
         referral_count = referral_result[1] if referral_result else 0
-        is_agree = referral_result[2] if referral_result else 0
-        referral_id = referral_result[3] if referral_result else 0
+        start_count = referral_result[2] if referral_result else 0
+        is_agree = referral_result[3] if referral_result else 0
+        referral_id = referral_result[4] if referral_result else 0
 
 
         cursor.execute("""
@@ -270,8 +268,9 @@ async def get_user_data(telegram_id):
 
         return {
             'telegram_id': telegram_id,
-            'message_id': message_id,
+            'user_name': user_name,
             'referral_count': referral_count,
+            'start_count': start_count,
             'is_agree': is_agree,
             'referral_id': referral_id,
             'devices': device_data
@@ -283,6 +282,147 @@ async def get_user_data(telegram_id):
     finally:
         if conn:
             conn.close()
+
+
+#оюновить юзер нем
+async def update_username(telegram_id, new_username):
+    """Updates the user_name for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE user_referrals
+            SET user_name = ?
+            WHERE telegram_id = ?
+        """, (new_username, telegram_id))
+
+        if cursor.rowcount == 0:
+            print(f"User with telegram_id {telegram_id} not found.")
+            return False
+
+        conn.commit()
+        print(f"User_name for telegram_id {telegram_id} updated to {new_username}.")
+        return True
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+#Плолучить имя пользователя
+async def get_username(telegram_id):
+    """Retrieves the username for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT user_name
+            FROM user_referrals
+            WHERE telegram_id = ?
+        """, (telegram_id,))
+
+        result = cursor.fetchone()
+
+        if result:
+            return result[0] # Return the username
+        else:
+            return None # User not found
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return None # Return None in case of an error
+    finally:
+        if conn:
+            conn.close()
+
+
+#Получить телеграм id по имени пользователя
+async def get_telegram_id_by_username(username):
+    """Retrieves the telegram_id for a given username."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT telegram_id
+            FROM user_referrals
+            WHERE user_name = ?
+        """, (username,))
+
+        result = cursor.fetchone()
+
+        if result:
+            return result[0] # Return the telegram_id
+        else:
+            return None # User not found
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return None # Return None in case of an error
+    finally:
+        if conn:
+            conn.close()
+
+#Обновление кол-во нажавших старт
+async def update_referral_in(telegram_id, referral_in):
+    """Updates the referral_in count for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE user_referrals
+            SET start_count = start_count + ?
+            WHERE telegram_id = ?
+        """, (referral_in, telegram_id))
+
+        conn.commit()
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+
+#получить кол-во прошедших страт
+async def get_referral_in_count(telegram_id):
+    """Retrieves the referral_in count for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT referral_count
+            FROM user_referrals
+            WHERE telegram_id = ?
+        """, (telegram_id,))
+
+        result = cursor.fetchone()
+
+        if result:
+            return result[0] # Return the referral count
+        else:
+            return None # User not found
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return None # Return None in case of an error
+    finally:
+        if conn:
+            conn.close()
+
+
+
 
 #Получить message_id
 async def get_message_id_by_telegram_id(telegram_id):
@@ -565,4 +705,3 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-
