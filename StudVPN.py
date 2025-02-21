@@ -100,7 +100,7 @@ async def restart_xray(ssh):
 
 
 
-async def remove_uuid_from_config(config_file, uuid_to_remove, uuid_keyword=UUID_KEYWORD):
+async def remove_uuid_from_config( uuid_to_remove):
     """Удаляет строку с указанным UUID из файла конфигурации."""
     try:
         # SSH подключение к серверу
@@ -118,8 +118,10 @@ async def remove_uuid_from_config(config_file, uuid_to_remove, uuid_keyword=UUID
                 uuid_str = str(uuid_to_remove) # converting UUID to a string
 
                 fl=0
-
+                pred=0
+                col=0
                 for line in lines:
+                    col=col+1
                     if fl==1:
                         fl=0
                         continue
@@ -127,12 +129,13 @@ async def remove_uuid_from_config(config_file, uuid_to_remove, uuid_keyword=UUID
                         updated_lines.append(line)
                     if uuid_str in line:
                         fl=1
+                        pred=col
                         updated_lines.pop()
 
                 async with sftp.open(CONFIG_FILE_PATH, 'w') as config_file:
                     await config_file.write(''.join(updated_lines))
 
-                await restart_xray(ssh)
+            await restart_xray(ssh)
 
     except Exception as e:
         print(f"Error writing config file: {e}")
@@ -301,11 +304,11 @@ async def start(message):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    button7 = types.InlineKeyboardButton("🔄 Поменять ключ", callback_data='change_link')
+    #button7 = types.InlineKeyboardButton("🔄 Поменять ключ", callback_data='change_link')
     markup.add(button1, button2)
-    markup.add(button3, button7)
+    markup.add(button3, button5)
     markup.add(button4, button6)
-    markup.add(button5)
+    #markup.add(button5)
 
     await bot.send_message(user_id, welcome_message, reply_markup=markup)
 
@@ -488,53 +491,56 @@ async def choose_subscription_duration_mounth(call):
 
 
 
-#Помеять ссылку
-@bot.callback_query_handler(func=lambda call: call.data == "change_link")
-async def change_link_vpn(call):
-    markup = types.InlineKeyboardMarkup()
-    button1 = types.InlineKeyboardButton("📱 iPhone", callback_data=f'iPhone_change|iPhone')
-    button2 = types.InlineKeyboardButton("📲 Android", callback_data=f'Android_change|Android')
-    button3 = types.InlineKeyboardButton("💻 Mac", callback_data='Mac_change|Mac')
-    button4 = types.InlineKeyboardButton("🖥️ Windows", callback_data='Windows_change|Windows')
-    button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
-    markup.add(button1)
-    markup.add(button2)
-    markup.add(button3)
-    markup.add(button4)
-    markup.add(button5)
-    await send_message_with_deletion(call.message.chat.id, "👇 Выберите устройство, для которого хотите поменять свой ключ:", markup)
-
-
-
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("iPhone_change") or call.data.startswith("Mac_change") or call.data.startswith("Android_change") or call.data.startswith("Windows_change"))
-async def learn_key(call):
-    data = call.data.split("|")
-    up = data[0]
-    device = data[1]
-    user_id=call.from_user.id
-    markup = types.InlineKeyboardMarkup()
-    button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
-    markup.add(button1)
-    fl=0
-    if device == "iPhone":
-        fl=1
-    elif device == "Android":
-        fl=2
-    elif device == "Mac":
-        fl=3
-    elif device == "Windows":
-        fl=4
-    cur_device_uuid=await get_device_uuid(user_id,device)
-    cur_device_time=await get_device_subscription_end_time(user_id,device)
-    cur_status_device=await get_device_payment_status(user_id,device)
-    await delete_device(cur_device_uuid)
-    await add_device(user_id,fl,device,cur_status_device,cur_device_time)
-    new_link = await get_vless_link(user_id,device)
-    user_endtime_device = await get_device_subscription_end_time(user_id, device)
-    user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
-    await bot.send_message(user_id,f"```{new_link}```",parse_mode='MarkdownV2')
-    await send_message_with_deletion(user_id, f"Ваша новая VLESS ссылка для {device}.\nВремя окончания подписки: {user_endtime_device_str}", reply_markup=markup)
+# #Помеять ссылку
+# @bot.callback_query_handler(func=lambda call: call.data == "change_link")
+# async def change_link_vpn(call):
+#     markup = types.InlineKeyboardMarkup()
+#     button1 = types.InlineKeyboardButton("📱 iPhone", callback_data=f'iPhone_change|iPhone')
+#     button2 = types.InlineKeyboardButton("📲 Android", callback_data=f'Android_change|Android')
+#     button3 = types.InlineKeyboardButton("💻 Mac", callback_data='Mac_change|Mac')
+#     button4 = types.InlineKeyboardButton("🖥️ Windows", callback_data='Windows_change|Windows')
+#     button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+#     markup.add(button1)
+#     markup.add(button2)
+#     markup.add(button3)
+#     markup.add(button4)
+#     markup.add(button5)
+#     await send_message_with_deletion(call.message.chat.id, "👇 Выберите устройство, для которого хотите поменять свой ключ:", markup)
+#
+#
+#
+#
+# @bot.callback_query_handler(func=lambda call: call.data.startswith("iPhone_change") or call.data.startswith("Mac_change") or call.data.startswith("Android_change") or call.data.startswith("Windows_change"))
+# async def learn_key(call):
+#     data = call.data.split("|")
+#     up = data[0]
+#     device = data[1]
+#     user_id=call.from_user.id
+#     markup = types.InlineKeyboardMarkup()
+#     button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+#     markup.add(button1)
+#     fl=0
+#     if device == "iPhone":
+#         fl=1
+#     elif device == "Android":
+#         fl=2
+#     elif device == "Mac":
+#         fl=3
+#     elif device == "Windows":
+#         fl=4
+#     cur_device_uuid=await get_device_uuid(user_id,device)
+#     await remove_uuid_from_config(cur_device_uuid)
+#     cur_device_time=await get_device_subscription_end_time(user_id,device)
+#     cur_status_device=await get_device_payment_status(user_id,device)
+#     await delete_device(cur_device_uuid)
+#     await add_device(user_id,fl,device,cur_status_device,cur_device_time)
+#     new_uuid = await get_device_uuid(user_id,device)
+#     await update_config_on_server(new_uuid)
+#     new_link = await get_vless_link(user_id,device)
+#     user_endtime_device = await get_device_subscription_end_time(user_id, device)
+#     user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
+#     await bot.send_message(user_id,f"```{new_link}```",parse_mode='MarkdownV2')
+#     await send_message_with_deletion(user_id, f"Ваша новая VLESS ссылка для {device}.\nВремя окончания подписки: {user_endtime_device_str}", reply_markup=markup)
 
 
 
@@ -564,11 +570,11 @@ async def back_to_main_menu(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    button7 = types.InlineKeyboardButton("🔄 Поменять ключ", callback_data='change_link')
+    #button7 = types.InlineKeyboardButton("🔄 Поменять ключ", callback_data='change_link')
     markup.add(button1, button2)
-    markup.add(button3, button7)
+    markup.add(button3, button5)
     markup.add(button4, button6)
-    markup.add(button5)
+    #markup.add(button5)
     await send_message_with_deletion(call.message.chat.id,welcome_message, markup)
 
 #Узнать свой ВПН
@@ -1236,7 +1242,7 @@ async def check_subscriptions_and_remove_expired():
                 expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
                 if expiry_date < now:
                     print(f"Подписка истекла для UUID: {device_uuid}. Удаляем из конфигурации.")
-                    await remove_uuid_from_config(CONFIG_FILE_PATH, device_uuid)
+                    await remove_uuid_from_config(device_uuid)
 
                     # Обновляем статус в базе
                     cursor.execute("""
