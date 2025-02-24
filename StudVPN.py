@@ -24,7 +24,7 @@ from database_utils import create_database, get_username,update_username,get_tel
 from update_schema import update_database_schema
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
-TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
+TELEGRAM_TOKEN = '7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE'
 ADMIN_IDS = [5510185795,1120515812]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
@@ -68,18 +68,6 @@ async def send_message_with_deletion(chat_id, text,reply_markup=None):
 
 
 
-async def send_message_with_deletion_parse(chat_id, text, parsemod):
-    # Удаляем предыдущее сообщение, если оно существует
-    if chat_id in last_message_ids:
-        try:
-            await bot.delete_message(chat_id, last_message_ids[chat_id])
-        except Exception as e:
-            print(f"Error deleting message: {e}")
-    # Отправляем новое сообщение
-    new_message = await bot.send_message(chat_id, text,parse_mode=parsemod)
-    # Сохраняем идентификатор нового сообщения
-    last_message_ids[chat_id] = new_message.message_id
-
 
 
 async def generate_vless_link_for_buy(user_id,message_chat_id,device_type):
@@ -109,32 +97,30 @@ async def remove_uuid_from_config( uuid_to_remove):
             async with ssh.start_sftp_client() as sftp:
                 # Читаем конфиг
                 async with sftp.open(CONFIG_FILE_PATH, 'r') as config_file:
-                    content = await config_file.read()  # Читаем весь файл
-                    lines = content.splitlines(keepends=True)
-                if not lines:
-                    return False  # Config file empty or not found
+                    config_content = await config_file.read()
 
-                updated_lines = []
-                uuid_str = str(uuid_to_remove) # converting UUID to a string
+                # Загружаем конфиг как JSON
+                config = json.loads(config_content)
 
-                fl=0
-                pred=0
-                col=0
-                for line in lines:
-                    col=col+1
-                    if fl==1:
-                        fl=0
-                        continue
-                    if  uuid_str not in line: # Check also for the UUID Keyword
-                        updated_lines.append(line)
-                    if uuid_str in line:
-                        fl=1
-                        pred=col
-                        updated_lines.pop()
+                # Переходим к списку клиентов
+                clients = config["inbounds"][0]["settings"]["clients"]
 
+                # Фильтруем список, удаляя клиентов с указанным UUID
+                updated_clients = [
+                    client for client in clients if client["id"] != uuid_to_remove
+                ]
+
+                # Передаем обновленный список в конфиг
+                config["inbounds"][0]["settings"]["clients"] = updated_clients
+
+                # Сериализуем обратно в JSON
+                updated_config_content = json.dumps(config, indent=4)
+
+                # Перезаписываем файл
                 async with sftp.open(CONFIG_FILE_PATH, 'w') as config_file:
-                    await config_file.write(''.join(updated_lines))
+                    await config_file.write(updated_config_content)
 
+            # Функция перезапуска сервиса (определите по необходимости)
             await restart_xray(ssh)
 
     except Exception as e:
@@ -198,23 +184,24 @@ async def dop_free_days(user_id, col_days):
         return
     if col_days>20:
         col_days=7
-    for device in device_comb:
-        cur_time_end = await get_device_subscription_end_time(referrer_id, device)
-        if cur_time_end != "None":
-            cur_time_end_new_format = datetime.fromisoformat(cur_time_end)
-            cur_time_end_new_format = cur_time_end_new_format + timedelta(days=col_days)
-            cur_status = await get_device_payment_status(user_id, device)
-            device_uuid = await get_device_uuid(referrer_id, device)
-            await update_device_status(device_uuid, True, cur_time_end_new_format)
-            if not cur_status:
-                await update_config_on_server(device_uuid)
-        else:
-            cur_time_end = datetime.now() + timedelta(days=col_days)
-            device_uuid = await get_device_uuid(referrer_id, device)
-            cur_status = await get_device_payment_status(user_id, device)
-            await update_device_status(device_uuid, True, cur_time_end)
-            if not cur_status:
-                await update_config_on_server(device_uuid)
+    if await check_user_exists(referrer_id):
+        for device in device_comb:
+            cur_time_end = await get_device_subscription_end_time(referrer_id, device)
+            if cur_time_end != "None":
+                cur_time_end_new_format = datetime.fromisoformat(cur_time_end)
+                cur_time_end_new_format = cur_time_end_new_format + timedelta(days=col_days)
+                cur_status = await get_device_payment_status(user_id, device)
+                device_uuid = await get_device_uuid(referrer_id, device)
+                await update_device_status(device_uuid, True, cur_time_end_new_format)
+                if not cur_status:
+                    await update_config_on_server(device_uuid)
+            else:
+                cur_time_end = datetime.now() + timedelta(days=col_days)
+                device_uuid = await get_device_uuid(referrer_id, device)
+                cur_status = await get_device_payment_status(user_id, device)
+                await update_device_status(device_uuid, True, cur_time_end)
+                if not cur_status:
+                    await update_config_on_server(device_uuid)
 
 
 
@@ -223,21 +210,24 @@ async def user_has_payed_in_bot_be_link(user_id,user_name):
     referrer_id = await get_referrer_id(user_id)
     if referrer_id==0:
         return
-    chat_id_from_sender = referrer_id
-    await send_message_with_deletion(chat_id_from_sender, f"😎Пользователь {user_name} оформил подписку в боте по вашей реферальной ссылке.\n 🎁Вам было начислено за это 14 дней бесплатного пользования.🎁")
+    if await check_user_exists(referrer_id):
+        chat_id_from_sender = referrer_id
+        await bot.send_message(chat_id_from_sender, f"😎Пользователь {user_name} оформил подписку в боте по вашей реферальной ссылке.\n 🎁Вам было начислено за это 14 дней бесплатного пользования.🎁")
     chat_id_from_recipient = user_id
-    await send_message_with_deletion(chat_id_from_recipient, "🎁Вам добавлено бесплатно 14 суток бесплатного пользования нашим ВПН на все устройства, за оплату подписки по реферальной ссылке🎁")
-    cur_ref_col = await get_user_referral_count(referrer_id)
-    cur_ref_col = cur_ref_col + 1
-    await update_referral_count(referrer_id, cur_ref_col)
-    await update_referrer_id(user_id,0)
+    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 14 суток бесплатного пользования нашим ВПН на все устройства, за оплату подписки по реферальной ссылке🎁")
+    if await check_user_exists(referrer_id):
+        cur_ref_col = await get_user_referral_count(referrer_id)
+        cur_ref_col = cur_ref_col + 1
+        await update_referral_count(referrer_id, cur_ref_col)
+        await update_referrer_id(user_id,0)
 
 
 #Напичать в чат людям о том, что человек зарегистрировался по реферальной ссылке
 async def user_has_registered_in_bot_be_link(user_id,user_name):
     referrer_id = await get_referrer_id(user_id)
-    chat_id_from_sender = referrer_id
-    await send_message_with_deletion(chat_id_from_sender, f"😎Пользователь {user_name} зарегистрировался в боте и вам было начислено за это 7 дней бесплатного пользования.")
+    if await check_user_exists(referrer_id):
+        chat_id_from_sender = referrer_id
+        await bot.send_message(chat_id_from_sender, f"😎Пользователь {user_name} зарегистрировался в боте и вам было начислено за это 7 дней бесплатного пользования.")
     chat_id_from_recipient = user_id
     await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 38 суток пользования нашим ВПН на все устройства, за регистрацию в боте по реферальной ссылке🎁")
 
@@ -491,57 +481,59 @@ async def choose_subscription_duration_mounth(call):
 
 
 
-# #Помеять ссылку
-# @bot.callback_query_handler(func=lambda call: call.data == "change_link")
-# async def change_link_vpn(call):
-#     markup = types.InlineKeyboardMarkup()
-#     button1 = types.InlineKeyboardButton("📱 iPhone", callback_data=f'iPhone_change|iPhone')
-#     button2 = types.InlineKeyboardButton("📲 Android", callback_data=f'Android_change|Android')
-#     button3 = types.InlineKeyboardButton("💻 Mac", callback_data='Mac_change|Mac')
-#     button4 = types.InlineKeyboardButton("🖥️ Windows", callback_data='Windows_change|Windows')
-#     button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
-#     markup.add(button1)
-#     markup.add(button2)
-#     markup.add(button3)
-#     markup.add(button4)
-#     markup.add(button5)
-#     await send_message_with_deletion(call.message.chat.id, "👇 Выберите устройство, для которого хотите поменять свой ключ:", markup)
-#
-#
-#
-#
-# @bot.callback_query_handler(func=lambda call: call.data.startswith("iPhone_change") or call.data.startswith("Mac_change") or call.data.startswith("Android_change") or call.data.startswith("Windows_change"))
-# async def learn_key(call):
-#     data = call.data.split("|")
-#     up = data[0]
-#     device = data[1]
-#     user_id=call.from_user.id
-#     markup = types.InlineKeyboardMarkup()
-#     button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
-#     markup.add(button1)
-#     fl=0
-#     if device == "iPhone":
-#         fl=1
-#     elif device == "Android":
-#         fl=2
-#     elif device == "Mac":
-#         fl=3
-#     elif device == "Windows":
-#         fl=4
-#     cur_device_uuid=await get_device_uuid(user_id,device)
-#     await remove_uuid_from_config(cur_device_uuid)
-#     cur_device_time=await get_device_subscription_end_time(user_id,device)
-#     cur_status_device=await get_device_payment_status(user_id,device)
-#     await delete_device(cur_device_uuid)
-#     await add_device(user_id,fl,device,cur_status_device,cur_device_time)
-#     new_uuid = await get_device_uuid(user_id,device)
-#     await update_config_on_server(new_uuid)
-#     new_link = await get_vless_link(user_id,device)
-#     user_endtime_device = await get_device_subscription_end_time(user_id, device)
-#     user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
-#     await bot.send_message(user_id,f"```{new_link}```",parse_mode='MarkdownV2')
-#     await send_message_with_deletion(user_id, f"Ваша новая VLESS ссылка для {device}.\nВремя окончания подписки: {user_endtime_device_str}", reply_markup=markup)
+#Помеять ссылку
+#bot.callback_query_handler(func=lambda call: call.data == "change_link")
+async def change_link_vpn(user_id,my_yser_id):
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("📱 iPhone", callback_data=f'iPhone_change|iPhone|{user_id}')
+    button2 = types.InlineKeyboardButton("📲 Android", callback_data=f'Android_change|Android|{user_id}')
+    button3 = types.InlineKeyboardButton("💻 Mac", callback_data='Mac_change|Mac|{user_id}')
+    button4 = types.InlineKeyboardButton("🖥️ Windows", callback_data='Windows_change|Windows|{user_id}')
+    button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+    markup.add(button1)
+    markup.add(button2)
+    markup.add(button3)
+    markup.add(button4)
+    markup.add(button5)
+    await send_message_with_deletion(my_yser_id, "👇 Выберите устройство, для которого хотите поменять свой ключ:", markup)
 
+
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("iPhone_change") or call.data.startswith("Mac_change") or call.data.startswith("Android_change") or call.data.startswith("Windows_change"))
+async def learn_key(call):
+    data = call.data.split("|")
+    up = data[0]
+    device = data[1]
+    user_id=data[2]
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
+    markup.add(button1)
+    fl = 0
+    if device == "iPhone":
+        fl = 1
+    elif device == "Android":
+        fl = 2
+    elif device == "Mac":
+        fl = 3
+    elif device == "Windows":
+        fl = 4
+    cur_device_uuid=await get_device_uuid(user_id,device)
+    await remove_uuid_from_config(cur_device_uuid)
+    cur_device_time=await get_device_subscription_end_time(user_id,device)
+    cur_status_device=await get_device_payment_status(user_id,device)
+    if cur_status_device is True:
+        await delete_device(cur_device_uuid)
+        await add_device(user_id,fl,device,cur_status_device,cur_device_time)
+        new_uuid = await get_device_uuid(user_id,device)
+        await update_config_on_server(new_uuid)
+        new_link = await get_vless_link(user_id,device)
+        user_endtime_device = await get_device_subscription_end_time(user_id, device)
+        user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
+        await bot.send_message(user_id,f"```{new_link}```",parse_mode='MarkdownV2')
+        await send_message_with_deletion(user_id, f"Ваша новая VLESS ссылка для {device}.\nВремя окончания подписки: {user_endtime_device_str}", reply_markup=markup)
+    else:
+        await send_message_with_deletion(user_id,f"У вас нет активного ключа, купите его",reply_markup=markup)
 
 
 #Обработчик команды "Назад"
@@ -826,7 +818,7 @@ async def print_top_ref(call):
     markup.add(button1)
     top_10 = await get_current_top_10()
     if not top_10:
-        await send_message_with_deletion(user_id, "Информация о топ-10 пока недоступна",reply_markup=markup)
+        await send_message_with_deletion(user_id, "Пока нет лидеров",reply_markup=markup)
         return
 
     response = "🏆 Топ-10 активных пользователей:\n\n"
@@ -845,6 +837,7 @@ async def referral_program(call):
     user_id = call.from_user.id
     user_col_ref = await get_user_referral_count(user_id)
     user_col_in=await get_referral_in_count(user_id)
+    print(user_col_in)
     markup = types.InlineKeyboardMarkup()
     button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu',reply_markup=markup)
     markup.add(button2)
@@ -853,6 +846,8 @@ async def referral_program(call):
     
 ️🙋‍♀️ Кол-во человек, которые купили подписку по вашей реферальной ссылке: {user_col_ref}. 
 Всего было начислено: {user_col_in*7+user_col_ref*14} дней, за вашу активность
+
+Статистика в разделе топ-10 обновляется каждые 20 минут, если вас сразу туда не записало, это нормально, нужно немного подождать)
     """,markup)
 
 
@@ -866,6 +861,7 @@ async def help_command(message):
     await send_message_with_deletion(message.chat.id, f"""
         👉Посмотреть как подкючить выданый ключ можно в инструкциях на Главной странице.
 
+Таблица топов по рефералам обновляется каждые 20 минут, если и после этого срока не учтено, напишите нам
 👨‍🔧Если вопрос по другой теме, задай его и тебе ответит первый освободившийся администратор.‍🔧
 
 @HugVPN_Support
@@ -898,6 +894,9 @@ async def admin_menu(message):
     btn2 = types.InlineKeyboardButton("✏️ Изменить данные пользователя", callback_data="edit_user_data")
     btn3 = types.InlineKeyboardButton("➕ Добавить дни всем пользователям", callback_data="add_days_to_all")
     btn11 = types.InlineKeyboardButton("📋 Получить тг айди по username", callback_data="get_tg_id")
+    btn7 = types.InlineKeyboardButton("🧤 Поменять ссылку пользователю", callback_data="ask_to_change")
+    btn8 = types.InlineKeyboardButton("👙 Поменять рефералов_старт кол-во ", callback_data="change_col_ref_start")
+    btn9 = types.InlineKeyboardButton("👙 Поменять рефералов_после кол-во",callback_data="change_col_ref_buy")
     btn5 = types.InlineKeyboardButton("📢 Массовая рассылка", callback_data="mass_message")
     btn4 = types.InlineKeyboardButton("📣 Узнать кол-во пользователей в базе данных", callback_data="col_user")
     markup.add(backup_button)
@@ -905,6 +904,9 @@ async def admin_menu(message):
     markup.add(btn2)
     markup.add(btn3)
     markup.add(btn11)
+    markup.add(btn7)
+    markup.add(btn8)
+    markup.add(btn9)
     markup.add(btn5)
     markup.add(btn4)
     await send_message_with_deletion(message.chat.id, "🔧 Админ-панель", reply_markup=markup)
@@ -947,6 +949,30 @@ async def get_user_info(call):
         if conn:
             conn.close()
 
+
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "change_col_ref_buy")
+async def change_col_ref_start(call: types.CallbackQuery):
+    """Запрос на добавление дней всем пользователям."""
+    user_id = call.from_user.id
+    admin_sms[user_id] = "change_col_ref_buy"  # Устанавливаем текущую задачу
+    await send_message_with_deletion(call.message.chat.id, "Введите имя пользователя человека без @:")
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "change_col_ref_start")
+async def change_col_ref_start(call: types.CallbackQuery):
+    """Запрос на добавление дней всем пользователям."""
+    user_id = call.from_user.id
+    admin_sms[user_id] = "change_col_ref_start"  # Устанавливаем текущую задачу
+    await send_message_with_deletion(call.message.chat.id, "Введите имя пользователя человека без @:")
+
+@bot.callback_query_handler(func=lambda call: call.data == "ask_to_change")
+async def ask_to_change(call: types.CallbackQuery):
+    """Запрос на добавление дней всем пользователям."""
+    user_id = call.from_user.id
+    admin_sms[user_id] = "ask_to_change"  # Устанавливаем текущую задачу
+    await send_message_with_deletion(call.message.chat.id, "Введите имя пользователя человека без @:")
 
 #Добавление дней всем пользователям ---
 @bot.callback_query_handler(func=lambda call: call.data == "add_days_to_all")
@@ -1056,6 +1082,19 @@ async def handle_admin_action(message: types.Message):
 
         # Очищаем задачу
         del admin_sms[user_id]
+    elif current_action == "ask_to_change":
+        target_user_name = message.text.strip()
+        target_user_id=await get_telegram_id_by_username(target_user_name)
+        if not await check_user_exists(target_user_id):
+            await send_message_with_deletion(
+                message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
+            )
+        else:
+            await change_link_vpn(target_user_id,user_id)
+
+        # Очищаем задачу
+        del admin_sms[user_id]
+
 
     # Изменение данных пользователя
     elif current_action == "edit_inf":
@@ -1070,6 +1109,33 @@ async def handle_admin_action(message: types.Message):
                 message.chat.id,
                 f"Пользователь {target_user_id} найден. Введите количество дней для добавления:",
             )
+    elif current_action == "change_col_ref_start":
+        target_user_name = message.text.strip()
+        target_user_id=await get_telegram_id_by_username(target_user_name)
+        if not await check_user_exists(target_user_id):
+            await bot.send_message(
+                message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
+            )
+        else:
+            admin_sms[user_id] = {"action": "change_col_ref_start", "target_user_id": target_user_id}
+            await send_message_with_deletion(
+                message.chat.id,
+                f"Пользователь {target_user_id} найден. Введите реальное количество рефералоа:",
+            )
+    elif current_action == "change_col_ref_buy":
+        target_user_name = message.text.strip()
+        target_user_id=await get_telegram_id_by_username(target_user_name)
+        if not await check_user_exists(target_user_id):
+            await bot.send_message(
+                message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
+            )
+        else:
+            admin_sms[user_id] = {"action": "change_col_ref_buy", "target_user_id": target_user_id}
+            await send_message_with_deletion(
+                message.chat.id,
+                f"Пользователь {target_user_id} найден. Введите реальное количество рефералоа:",
+            )
+
     elif current_action == "get_tgid":
         username = message.text.strip().replace("@", "")
         conn = None
@@ -1125,6 +1191,33 @@ async def handle_admin_action(message: types.Message):
             await send_message_with_deletion(
                 message.chat.id,
                 f"✅ Пользователю {target_user_id} добавлено {days_to_add} дней подписки.",
+            )
+        except ValueError:
+            await send_message_with_deletion(message.chat.id, "❌ Введите корректное число дней.")
+        finally:
+            del admin_sms[user_id]
+
+    elif isinstance(current_action, dict) and current_action.get("action") == "change_col_ref_start":
+        try:
+            days_to_change = int(message.text.strip())
+            target_user_id = current_action["target_user_id"]
+            await update_referral_in(target_user_id,days_to_change)
+            await send_message_with_deletion(
+                message.chat.id,
+                f"✅ Пользователю {target_user_id} изменено {days_to_change}.",
+            )
+        except ValueError:
+            await send_message_with_deletion(message.chat.id, "❌ Введите корректное число дней.")
+        finally:
+            del admin_sms[user_id]
+    elif isinstance(current_action, dict) and current_action.get("action") == "change_col_ref_buy":
+        try:
+            days_to_change = int(message.text.strip())
+            target_user_id = current_action["target_user_id"]
+            await update_referral_count(target_user_id,days_to_change)
+            await send_message_with_deletion(
+                message.chat.id,
+                f"✅ Пользователю {target_user_id} изменено.",
             )
         except ValueError:
             await send_message_with_deletion(message.chat.id, "❌ Введите корректное число дней.")
@@ -1277,7 +1370,9 @@ async def get_top_10_referrers():
                 (referral_count + start_count) as total_count
             FROM user_referrals 
             WHERE user_name IS NOT NULL 
-                AND user_name != ''
+                AND user_name != "adubaiii"
+                AND user_name != "GbPerviy"
+                AND user_name != "yuldek"
                 AND (referral_count > 0 OR start_count > 0)
             ORDER BY total_count DESC 
             LIMIT 10
@@ -1307,7 +1402,7 @@ async def get_top_10_referrers():
 async def start_scheduler():
     scheduler = AsyncIOScheduler()
     await update_top_10_cache()
-    scheduler.add_job(update_top_10_cache, 'interval', hours=5)
+    scheduler.add_job(update_top_10_cache, 'interval', minutes=20)
     scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', days=1)
     scheduler.start()
     print("Планировщик подписок запущен.")
@@ -1315,6 +1410,8 @@ async def start_scheduler():
 
 async def main():
     await setup_menu()  # Настраиваем команды бота
+    #await update_referral_in(1568939620,2)
+    #await update_referral_in(851394287, 1)
     #await update_database_schema()
     #await create_database()  # Создаём базу данных
     await start_scheduler()  #

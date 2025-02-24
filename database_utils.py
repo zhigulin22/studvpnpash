@@ -380,7 +380,7 @@ async def update_referral_in(telegram_id, referral_in):
 
         cursor.execute("""
             UPDATE user_referrals
-            SET start_count = start_count + ?
+            SET start_count =  ?
             WHERE telegram_id = ?
         """, (referral_in, telegram_id))
 
@@ -402,7 +402,7 @@ async def get_referral_in_count(telegram_id):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT referral_count
+            SELECT start_count
             FROM user_referrals
             WHERE telegram_id = ?
         """, (telegram_id,))
