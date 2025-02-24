@@ -24,7 +24,7 @@ from database_utils import create_database, get_username,update_username,get_tel
 from update_schema import update_database_schema
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
-TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
+TELEGRAM_TOKEN = '7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE'
 ADMIN_IDS = [5510185795,1120515812]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
@@ -275,7 +275,7 @@ async def start(message):
         await add_device(user_id, 3, "Android", False, "None")
         await add_device(user_id, 4, "Windows", False, "None")
         if referrer is not None:
-            cur_col_in = await get_referral_in_count(user_id)
+            cur_col_in = await get_referral_in_count(referrer)
             await update_referral_in(referrer,cur_col_in+1)
             await dop_free_days(user_id, 38)
             await user_has_registered_in_bot_be_link(user_id, user_name)
@@ -730,9 +730,10 @@ async def pay_to_proceed(call):
         username=call.from_user.username
         plan_text = call.data
         description = f"✅ Подписка на {sub}."
-
+        print(1)
         # 📤 Создание платежа через ЮKassa
         payment_link, payment_id = await create_payment(amount, description)
+        print(2)
         if payment_link:
             await send_message_with_deletion(call.message.chat.id, f"👇 Перейдите по ссылке для оплаты:\n{payment_link}",reply_markup=markup1)
             attempts = 0

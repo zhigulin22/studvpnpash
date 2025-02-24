@@ -1,46 +1,59 @@
 import requests
 import uuid
+from yookassa import Configuration, Payment
 
 # Данные ЮKassa
+Configuration.account_id = '1020973'    # например, "123456"
+Configuration.secret_key = 'live_FosI0F8F_OqOHsJM4tiWtCfPBSZAVGma8J90WRRK7Ks'
 SHOP_ID = '1020973'
-API_KEY = 'live_nGF4J8peJ_OchoHNjvknefVHHrS7Szh9GSLgsmNQ_sE'
+API_KEY = 'live_FosI0F8F_OqOHsJM4tiWtCfPBSZAVGma8J90WRRK7Ks'
 RETURN_URL = 'https://t.me/HugVPN_bot'
 
-async def create_payment(amount, description):
+async def create_payment(amount, description, email=None):
     payment_id = str(uuid.uuid4())  # Уникальный ID платежа
     idempotence_key = str(uuid.uuid4())  # Уникальный идемпотентный ключ
 
-    payment_data = {
-        "amount": {"value": amount, "currency": "RUB"},
-        "confirmation": {"type": "redirect", "return_url": RETURN_URL},
+    # Формируем базовую структуру платежа
+    payment = Payment.create({
+        "amount": {
+            "value": str(amount),
+            "currency": "RUB"
+        },
         "capture": True,
+        "confirmation": {
+            "type": "redirect",
+            "return_url": "https://www.example.com/return_url"
+        },
         "description": description,
-        "metadata": {"order_id": payment_id}
-    }
-
-    headers = {
-        "Idempotence-Key": idempotence_key,  # Обязательный заголовок
-        "Authorization": f"Basic {API_KEY}",
-        "Content-Type": "application/json"
-    }
+        "metadata": {
+            "order_id": payment_id
+        },
+        "receipt": {
+            "customer": {
+                "email": "user@example.com"
+            },
+            "items": [
+                {
+                    "description": "Подписка Впн",
+                    "quantity": 1,
+                    "amount": {
+                        "value": str(amount),
+                        "currency": "RUB"
+                    },
+                    "vat_code": 1
+                }
+            ]
+        }
+    }, idempotence_key)
 
     try:
-        response = requests.post(
-            "https://api.yookassa.ru/v3/payments",
-            json=payment_data,
-            headers=headers,               # Передача заголовков
-            auth=(SHOP_ID, API_KEY)
-        )
+        # Создаём платеж через API ЮKassa
 
-        if response.status_code == 200:
-            payment_info = response.json()
-            return payment_info["confirmation"]["confirmation_url"], payment_info["id"]
-        else:
-            print("Ошибка при создании платежа:", response.status_code, response.text)
-            return None
+        # Если библиотека возвращает объект с confirmation, получаем нужные поля:
+        return payment.confirmation.confirmation_url, payment.id
 
     except Exception as e:
-        print("Ошибка соединения с ЮKassa:", e)
+        print(f"Ошибка при создании платежа: {e}")
         return None
 
 
