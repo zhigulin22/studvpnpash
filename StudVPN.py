@@ -448,9 +448,7 @@ async def choose_subscription_duration_mounth(call):
                     break
                 status = await check_payment_status(payment_id)
                 if status == 'succeeded':
-                    cur_time_end = await get_device_subscription_end_time(user_id, device)
-                    cur_time_end = datetime.fromisoformat(cur_time_end)
-                    cur_time_end = cur_time_end + timedelta(days=cur_time)
+                    cur_time_end = datetime.now() + timedelta(days=cur_time)
                     device_uuid = await get_device_uuid(user_id, device)
                     await update_device_status(device_uuid, device, cur_time_end)
                     vless_link = await get_vless_link(user_id, device)
