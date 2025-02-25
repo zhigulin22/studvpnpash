@@ -24,7 +24,7 @@ from database_utils import create_database, get_username,update_username,get_tel
 from update_schema import update_database_schema
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
-TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
+TELEGRAM_TOKEN = '7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE'
 ADMIN_IDS = [5510185795,1120515812]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
@@ -163,7 +163,7 @@ async def dop_free_days(user_id, col_days):
     device_comb=["iPhone", "Android", "Mac", "Windows"]
     for device in device_comb:
         cur_time_end = await get_device_subscription_end_time(user_id, device)
-        if cur_time_end != "None":
+        if cur_time_end is not None:
             cur_time_end_new_format = datetime.fromisoformat(cur_time_end)
             cur_time_end_new_format = cur_time_end_new_format + timedelta(days=col_days)
             cur_status=await get_device_payment_status(user_id, device)
@@ -187,7 +187,7 @@ async def dop_free_days(user_id, col_days):
     if await check_user_exists(referrer_id):
         for device in device_comb:
             cur_time_end = await get_device_subscription_end_time(referrer_id, device)
-            if cur_time_end != "None":
+            if cur_time_end is not None:
                 cur_time_end_new_format = datetime.fromisoformat(cur_time_end)
                 cur_time_end_new_format = cur_time_end_new_format + timedelta(days=col_days)
                 cur_status = await get_device_payment_status(user_id, device)
@@ -432,11 +432,10 @@ async def choose_subscription_duration_mounth(call):
     button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button2)
     user_payment_status[user_id] = {'status': 'pending', 'attempts': 0}
-    if user_status_device is True:
+    if user_status_device is not True:
         user_id = call.from_user.id
         plan_text = call.data
         description = f"✅ Подписка на {sub}."
-
         # 📤 Создание платежа через ЮKassa
         payment_link, payment_id = await create_payment(amount, description)
         if payment_link:
@@ -1335,6 +1334,7 @@ async def check_subscriptions_and_remove_expired():
                 if expiry_date < now:
                     print(f"Подписка истекла для UUID: {device_uuid}. Удаляем из конфигурации.")
                     await remove_uuid_from_config(device_uuid)
+                    await update_device_status(device_uuid,False,None)
 
                     # Обновляем статус в базе
                     cursor.execute("""
@@ -1412,6 +1412,7 @@ async def main():
     #await update_referral_in(1568939620,2)
     #await update_referral_in(851394287, 1)
     #await update_database_schema()
+    await update_device_status("4a96be34-251e-4712-a93b-d3c7dbecaeaa",False,None)
     #await create_database()  # Создаём базу данных
     await start_scheduler()  #
     await bot.polling(none_stop=True)
