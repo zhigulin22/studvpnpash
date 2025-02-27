@@ -270,10 +270,10 @@ async def start(message):
             pass
     if not await check_user_exists(user_id):
         await add_user(user_id, user_name_id, 0,0,True,referrer)
-        await add_device(user_id, 1,"iPhone",False,"None")
-        await add_device(user_id, 2, "Mac", False, "None")
-        await add_device(user_id, 3, "Android", False, "None")
-        await add_device(user_id, 4, "Windows", False, "None")
+        await add_device(user_id, 1,"iPhone",False,None)
+        await add_device(user_id, 2, "Mac", False, None)
+        await add_device(user_id, 3, "Android", False, None)
+        await add_device(user_id, 4, "Windows", False, None)
         if referrer is not None:
             cur_col_in = await get_referral_in_count(referrer)
             await update_referral_in(referrer,cur_col_in+1)
@@ -1412,7 +1412,7 @@ async def main():
     #await update_referral_in(1568939620,2)
     #await update_referral_in(851394287, 1)
     #await update_database_schema()
-    await update_device_status("4a96be34-251e-4712-a93b-d3c7dbecaeaa",False,None)
+    #await update_device_status("4a96be34-251e-4712-a93b-d3c7dbecaeaa",False,None)
     #await create_database()  # Создаём базу данных
     await start_scheduler()  #
     await bot.polling(none_stop=True)
