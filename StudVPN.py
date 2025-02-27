@@ -160,10 +160,11 @@ async def update_config_on_server(new_uuid):
 
 async def dop_free_days(user_id, col_days):
     referrer_id = await get_referrer_id(user_id)
+    print(referrer_id)
     device_comb=["iPhone", "Android", "Mac", "Windows"]
     for device in device_comb:
         cur_time_end = await get_device_subscription_end_time(user_id, device)
-        if cur_time_end is not None:
+        if cur_time_end != "None" and cur_time_end is not None:
             cur_time_end_new_format = datetime.fromisoformat(cur_time_end)
             cur_time_end_new_format = cur_time_end_new_format + timedelta(days=col_days)
             cur_status=await get_device_payment_status(user_id, device)
