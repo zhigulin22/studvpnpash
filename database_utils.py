@@ -696,7 +696,7 @@ async def get_all_users():
 
 
 async def main():
-    #await delete_user(5510185795)
+    #await delete_user(7547972924)
     all_users = await get_all_users()
     print("Все пользователи:")
     for user in all_users:

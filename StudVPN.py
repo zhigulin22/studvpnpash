@@ -158,6 +158,30 @@ async def update_config_on_server(new_uuid):
         print(f"Ошибка при обновлении конфигурации: {e}")
 
 
+
+async def dop_free_days_for_one(user_id, col_days):
+    device_comb=["iPhone", "Android", "Mac", "Windows"]
+    for device in device_comb:
+        cur_time_end = await get_device_subscription_end_time(user_id, device)
+        if cur_time_end != 0 and cur_time_end is not None:
+            cur_time_end_new_format = datetime.fromisoformat(cur_time_end)
+            cur_time_end_new_format = cur_time_end_new_format + timedelta(days=col_days)
+            cur_status=await get_device_payment_status(user_id, device)
+            device_uuid = await get_device_uuid(user_id, device)
+            await update_device_status(device_uuid, True, cur_time_end_new_format)
+            if not cur_status:
+                await update_config_on_server(device_uuid)
+        else:
+            cur_time_end = datetime.now() + timedelta(days=col_days)
+            device_uuid = await get_device_uuid(user_id, device)
+            cur_status = await get_device_payment_status(user_id, device)
+            await update_device_status(device_uuid, True, cur_time_end)
+            if not cur_status:
+                await update_config_on_server(device_uuid)
+
+
+
+
 async def dop_free_days(user_id, col_days):
     referrer_id = await get_referrer_id(user_id)
     print(referrer_id)
@@ -209,18 +233,13 @@ async def dop_free_days(user_id, col_days):
 #Напичать в чат людям о том, что человек купил подписку по реферальной ссылке
 async def user_has_payed_in_bot_be_link(user_id,user_name):
     referrer_id = await get_referrer_id(user_id)
-    if referrer_id==0:
+    if referrer_id==0 or referrer_id is None:
         return
     if await check_user_exists(referrer_id):
         chat_id_from_sender = referrer_id
         await bot.send_message(chat_id_from_sender, f"😎Пользователь {user_name} оформил подписку в боте по вашей реферальной ссылке.\n 🎁Вам было начислено за это 14 дней бесплатного пользования.🎁")
     chat_id_from_recipient = user_id
     await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 14 суток бесплатного пользования нашим ВПН на все устройства, за оплату подписки по реферальной ссылке🎁")
-    if await check_user_exists(referrer_id):
-        cur_ref_col = await get_user_referral_count(referrer_id)
-        cur_ref_col = cur_ref_col + 1
-        await update_referral_count(referrer_id, cur_ref_col)
-        await update_referrer_id(user_id,0)
 
 
 #Напичать в чат людям о том, что человек зарегистрировался по реферальной ссылке
@@ -455,7 +474,12 @@ async def choose_subscription_duration_mounth(call):
                     await bot.send_message(call.message.chat.id,text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка для {device}: ```{vless_link}```",parse_mode='MarkdownV2')
                     user_endtime_device = await get_device_subscription_end_time(user_id, device)
                     user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
-                    await dop_free_days(user_id,14)
+                    cur_refer = await get_referrer_id(user_id)
+                    if cur_refer is not None and cur_refer != 0:
+                        await dop_free_days_for_one(cur_refer, 14)
+                        cur_col_ref_buy = await get_user_referral_count(cur_refer)
+                        cur_col_ref_buy = cur_col_ref_buy + 1
+                        await update_referral_count(cur_refer, cur_col_ref_buy)
                     markup1 = types.InlineKeyboardMarkup()
                     button1 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
                     button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
@@ -748,6 +772,12 @@ async def pay_to_proceed(call):
                     await update_device_status(device_uuid, True, cur_time_end)
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id, text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка для {device}: ```{vless_link}```", parse_mode='MarkdownV2')
+                    cur_refer = await get_referrer_id(user_id)
+                    if cur_refer is not None and cur_refer != 0:
+                        await dop_free_days_for_one(cur_refer, 14)
+                        cur_col_ref_buy = await get_user_referral_count(cur_refer)
+                        cur_col_ref_buy = cur_col_ref_buy + 1
+                        await update_referral_count(cur_refer,cur_col_ref_buy)
                     user_endtime_device = await get_device_subscription_end_time(user_id, device)
                     user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
                     await user_has_payed_in_bot_be_link(user_id,username)
