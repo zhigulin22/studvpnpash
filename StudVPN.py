@@ -249,7 +249,7 @@ async def user_has_registered_in_bot_be_link(user_id,user_name):
         chat_id_from_sender = referrer_id
         await bot.send_message(chat_id_from_sender, f"😎Пользователь {user_name} зарегистрировался в боте и вам было начислено за это 7 дней бесплатного пользования.")
     chat_id_from_recipient = user_id
-    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 38 суток пользования нашим ВПН на все устройства, за регистрацию в боте по реферальной ссылке🎁")
+    await bot.send_message(chat_id_from_recipient, "🎉 В честь вашей регистрации по реферальной ссылке, вы получили бесплатный доступ к нашему VPN на 38 суток для всех ваших устройств 🎉")
 
 
 #Написать слова за регистраци
@@ -274,6 +274,9 @@ async def start(message):
 
 🎁 Хочешь бесплатный VPN?
 Присоединяйся к нашей реферальной программе и получай бесплатные недели использования!
+
+Также есть сервис, в котором можно купить иностранную карту и оплачивать любые услуги без ограничений
+Ссылка внизу
         
 🟢 Ваш профиль активен"""
     )
@@ -289,6 +292,7 @@ async def start(message):
         except ValueError:
             pass
     if not await check_user_exists(user_id):
+        if str(referrer)[0] == '#': referrer = None
         await add_user(user_id, user_name_id, 0,0,True,referrer)
         await add_device(user_id, 1,"iPhone",False,None)
         await add_device(user_id, 2, "Mac", False, None)
@@ -314,11 +318,11 @@ async def start(message):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    #button7 = types.InlineKeyboardButton("🔄 Поменять ключ", callback_data='change_link')
+    button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
     markup.add(button1, button2)
-    markup.add(button3, button5)
+    markup.add(button3, button7)
     markup.add(button4, button6)
-    #markup.add(button5)
+    markup.add(button5)
 
     await bot.send_message(user_id, welcome_message, reply_markup=markup)
 
@@ -573,6 +577,9 @@ async def back_to_main_menu(call):
 
 🎁 Хочешь бесплатный VPN?
 Присоединяйся к нашей реферальной программе и получай бесплатные недели использования!
+
+Также есть сервис, в котором можно купить иностранную карту и оплачивать любые услуги без ограничений
+Ссылка внизу
         
 🟢 Ваш профиль активен"""
 
@@ -706,9 +713,11 @@ async def cancel_pay(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
+    button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
     markup.add(button1, button2)
-    markup.add(button3, button5)
+    markup.add(button3, button7)
     markup.add(button4, button6)
+    markup.add(button5)
     await send_message_with_deletion(call.message.chat.id, welcome_message, markup)
 
 
@@ -888,10 +897,10 @@ async def referral_program(call):
 async def help_command(message):
     user_id=message.from_user.id
     await send_message_with_deletion(message.chat.id, f"""
-        👉Посмотреть как подкючить выданый ключ можно в инструкциях на Главной странице.
+        👉 Посмотреть, как подключить выданный ключ, можно в инструкциях на главной странице.
 
-Таблица топов по рефералам обновляется каждые 20 минут, если и после этого срока не учтено, напишите нам
-👨‍🔧Если вопрос по другой теме, задай его и тебе ответит первый освободившийся администратор.‍🔧
+Таблица топов по рефералам обновляется каждые 20 минут. Если и после этого срока начисление не учтено, напишите нам.
+👨‍🔧 Если вопрос по другой теме, задайте его, и вам ответит первый освободившийся администратор 🔧
 
 @HugVPN_Support
     """)
