@@ -317,11 +317,11 @@ async def start(message):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
+    #button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
     markup.add(button1, button2)
-    markup.add(button3, button7)
+    markup.add(button3, button5)
     markup.add(button4, button6)
-    markup.add(button5)
+    #markup.add(button5)
 
     await bot.send_message(user_id, welcome_message, reply_markup=markup)
 
@@ -589,11 +589,11 @@ async def back_to_main_menu(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
+    #button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
     markup.add(button1, button2)
-    markup.add(button3, button7)
+    markup.add(button3, button5)
     markup.add(button4, button6)
-    markup.add(button5)
+    #markup.add(button5)
     await send_message_with_deletion(call.message.chat.id,welcome_message, markup)
 
 #Узнать свой ВПН
@@ -711,11 +711,11 @@ async def cancel_pay(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
+    #button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
     markup.add(button1, button2)
-    markup.add(button3, button7)
+    markup.add(button3, button5)
     markup.add(button4, button6)
-    markup.add(button5)
+    #markup.add(button5)
     await send_message_with_deletion(call.message.chat.id, welcome_message, markup)
 
 
