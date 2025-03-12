@@ -9,17 +9,27 @@ async def update_database_schema():
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
 
-        # Добавляем новую колонку для хранения количества людей, которые нажали старт по вашей ссылке
+        #Добавляем новую колонку для хранения количества людей, которые нажали старт по вашей ссылке
         cursor.execute("""
             ALTER TABLE user_referrals
-            ADD COLUMN start_count INTEGER DEFAULT 0
+            ADD COLUMN flag INTEGER DEFAULT 0
         """)
 
-        # Переименовываем колонку `message_id` в `user_name`
         cursor.execute("""
             ALTER TABLE user_referrals
-            RENAME COLUMN message_id TO user_name
+            ADD COLUMN purchase_amount INTEGER DEFAULT 0
         """)
+
+        cursor.execute("""
+                ALTER TABLE user_referrals
+                ADD COLUMN renewal_amount INTEGER DEFAULT 0
+        """)
+
+        cursor.execute("""
+                        ALTER TABLE user_referrals
+                        ADD COLUMN all_pay INTEGER DEFAULT 0
+                """)
+
 
         conn.commit()
         print("Database schema updated successfully.")

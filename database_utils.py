@@ -52,6 +52,10 @@ async def create_database():
                 start_count INTEGER DEFAULT 0, -- Новая колонка
                 is_agree BOOLEAN DEFAULT FALSE,
                 referrer_id INTEGER,
+                flag INTEGER DEFAULT 0,
+                purchase_amount INTEGER DEFAULT 0,
+                renewal_amount INTEGER DEFAULT 0,
+                all_pay INTEGER DEFAULT 0,
                 FOREIGN KEY (referrer_id) REFERENCES user_referrals(telegram_id)
             )
         """)
@@ -81,7 +85,7 @@ async def create_database():
 # Пример вызова функции
 
 
-async def add_user(telegram_id, user_name, referral_count, start_count, is_agree, referrer_id):
+async def add_user(telegram_id, user_name, referral_count, start_count, is_agree, referrer_id,flag,purchase_amount,renewal_amount,all_pay):
     """Adds a new user or updates an existing user."""
     conn = None
     try:
@@ -89,15 +93,19 @@ async def add_user(telegram_id, user_name, referral_count, start_count, is_agree
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO user_referrals (telegram_id, user_name, referral_count, start_count, is_agree, referrer_id)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO user_referrals (telegram_id, user_name, referral_count, start_count, is_agree, referrer_id,flag, purchase_amount, renewal_amount, all_pay)
+            VALUES (?, ?, ?, ?, ?, ?,?,?,?,?)
             ON CONFLICT(telegram_id) DO UPDATE SET
                 user_name=excluded.user_name,
                 referral_count = excluded.referral_count,
                 start_count = excluded.start_count,
                 is_agree = excluded.is_agree,
-                referrer_id = excluded.referrer_id
-        """, (telegram_id, user_name, referral_count, start_count, is_agree, referrer_id))
+                referrer_id = excluded.referrer_id,
+                flag = excluded.flag,
+                purchase_amount = excluded.purchase_amount,
+                renewal_amount = excluded.renewal_amount,
+                all_pay = excluded.all_pay,
+        """, (telegram_id, user_name, referral_count, start_count, is_agree, referrer_id,flag,purchase_amount,renewal_amount,all_pay))
 
         conn.commit()
         return telegram_id
@@ -236,13 +244,17 @@ async def get_user_data(telegram_id):
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT user_name, referral_count,start_count, is_agree, referrer_id FROM user_referrals WHERE telegram_id = ?", (telegram_id,))
+        cursor.execute("SELECT user_name, referral_count,start_count, is_agree, referrer_id,flag,purchase_amount,renewal_amount, all_pay FROM user_referrals WHERE telegram_id = ?", (telegram_id,))
         referral_result = cursor.fetchone()
         user_name = referral_result[0] if referral_result else 0
         referral_count = referral_result[1] if referral_result else 0
         start_count = referral_result[2] if referral_result else 0
         is_agree = referral_result[3] if referral_result else 0
         referral_id = referral_result[4] if referral_result else 0
+        flag = referral_result[5] if referral_result else 0
+        purchase_amount = referral_result[6] if referral_result else 0
+        renewal_amount = referral_result[7] if referral_result else 0
+        all_pay = referral_result[8] if referral_result else 0
 
 
         cursor.execute("""
@@ -265,14 +277,19 @@ async def get_user_data(telegram_id):
                 'is_paid': bool(device[3]),
                 'subscription_end_time': device[4]
             }
+            break
 
         return {
             'telegram_id': telegram_id,
             'user_name': user_name,
             'referral_count': referral_count,
             'start_count': start_count,
-            'is_agree': is_agree,
             'referral_id': referral_id,
+            'flag': flag,
+            'purchase_amount': purchase_amount,
+            'renewal_amount ':renewal_amount,
+            'all_pay':all_pay,
+            'is_agree': is_agree,
             'devices': device_data
         }
 
@@ -388,6 +405,214 @@ async def update_referral_in(telegram_id, referral_in):
 
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+
+# Обновление суммы первых оплат
+async def update_purchase_amount(telegram_id, purchase_amount):
+    """Updates the referral_in count for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE user_referrals
+            SET purchase_amount =  ?
+            WHERE telegram_id = ?
+        """, (purchase_amount, telegram_id))
+
+        conn.commit()
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+
+# получить сумму первых оплат
+async def get_purchase_amount(telegram_id):
+    """Retrieves the referral_in count for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT purchase_amount
+            FROM user_referrals
+            WHERE telegram_id = ?
+        """, (telegram_id,))
+
+        result = cursor.fetchone()
+
+        if result:
+            return result[0]  # Return the referral count
+        else:
+            return None  # User not found
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return None  # Return None in case of an error
+    finally:
+        if conn:
+            conn.close()
+
+
+# Обновление статуса первой оплаты
+async def update_all_pay(telegram_id, all_pay):
+    """Updates the referral_in count for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE user_referrals
+            SET all_pay =  ?
+            WHERE telegram_id = ?
+        """, (all_pay, telegram_id))
+
+        conn.commit()
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+
+# получить flag
+async def get_all_pay(telegram_id):
+    """Retrieves the referral_in count for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT all_pay
+            FROM user_referrals
+            WHERE telegram_id = ?
+        """, (telegram_id,))
+
+        result = cursor.fetchone()
+
+        if result:
+            return result[0]  # Return the referral count
+        else:
+            return None  # User not found
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return None  # Return None in case of an error
+    finally:
+        if conn:
+            conn.close()
+
+
+# Обновление статуса первой оплаты
+async def update_renewal_amount(telegram_id, renewal_amount):
+    """Updates the referral_in count for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE user_referrals
+            SET renewal_amount =  ?
+            WHERE telegram_id = ?
+        """, (renewal_amount, telegram_id))
+
+        conn.commit()
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+
+# получить flag
+async def get_renewal_amount(telegram_id):
+    """Retrieves the referral_in count for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT renewal_amount
+            FROM user_referrals
+            WHERE telegram_id = ?
+        """, (telegram_id,))
+
+        result = cursor.fetchone()
+
+        if result:
+            return result[0]  # Return the referral count
+        else:
+            return None  # User not found
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return None  # Return None in case of an error
+    finally:
+        if conn:
+            conn.close()
+
+
+#Обновление статуса первой оплаты
+async def update_flag(telegram_id, referral_in):
+    """Updates the referral_in count for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE user_referrals
+            SET flag =  ?
+            WHERE telegram_id = ?
+        """, (referral_in, telegram_id))
+
+        conn.commit()
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+
+#получить flag
+async def get_flag(telegram_id):
+    """Retrieves the referral_in count for a given telegram_id."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT flag
+            FROM user_referrals
+            WHERE telegram_id = ?
+        """, (telegram_id,))
+
+        result = cursor.fetchone()
+
+        if result:
+            return result[0] # Return the referral count
+        else:
+            return None # User not found
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return None # Return None in case of an error
     finally:
         if conn:
             conn.close()
@@ -696,7 +921,9 @@ async def get_all_users():
 
 
 async def main():
-    #await delete_user(7547972924)
+    #await delete_user(1120515812)
+    #await update_flag(5510185795,1)
+    #await create_database()
     all_users = await get_all_users()
     print("Все пользователи:")
     for user in all_users:
