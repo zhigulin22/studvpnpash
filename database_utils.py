@@ -104,7 +104,7 @@ async def add_user(telegram_id, user_name, referral_count, start_count, is_agree
                 flag = excluded.flag,
                 purchase_amount = excluded.purchase_amount,
                 renewal_amount = excluded.renewal_amount,
-                all_pay = excluded.all_pay,
+                all_pay = excluded.all_pay
         """, (telegram_id, user_name, referral_count, start_count, is_agree, referrer_id,flag,purchase_amount,renewal_amount,all_pay))
 
         conn.commit()
