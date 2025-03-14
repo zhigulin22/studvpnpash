@@ -335,7 +335,7 @@ async def buy_vpn(call):
 @bot.callback_query_handler(func=lambda call: call.data == "instruction")
 async def buy_vpn(call):
     markup = types.InlineKeyboardMarkup()
-    button1 = types.InlineKeyboardButton("📱 Iphone", url='https://t.me/HugVPN/41')
+    button1 = types.InlineKeyboardButton("📱 iPhone", url='https://t.me/HugVPN/41')
     button2 = types.InlineKeyboardButton("📲 Android", url='https://t.me/HugVPN/42')
     button3 = types.InlineKeyboardButton("💻 Mac", url='https://t.me/HugVPN/43')
     button4 = types.InlineKeyboardButton("🖥️ Windows", url='https://t.me/HugVPN/45')
@@ -379,7 +379,7 @@ async def buy_vpn(call):
         button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
         markup.add(button1)
         markup.add(button2)
-        await send_message_with_deletion(call.message.chat.id, f"У вас уже есть подписка🟢.\nМожите посмотреть ключ во вкладе Мой ВПН\n\nВремя окончания вашей подписки: {user_endtime_device_str}\n\nХотите ее продлить?",markup)
+        await send_message_with_deletion(call.message.chat.id, f"У вас уже есть подписка 🟢\nМожете посмотреть ключ во вкладе Мой VPN\n\nВремя окончания вашей подписки: {user_endtime_device_str}\n\nХотите ее продлить?",markup)
     else:
         markup = types.InlineKeyboardMarkup()
         button1 = types.InlineKeyboardButton("- 1 месяц - 99₽", callback_data=f'1month1|{device}')
