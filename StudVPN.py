@@ -1453,6 +1453,7 @@ async def get_top_10_referrers():
                 AND user_name != "adubaiii"
                 AND user_name != "GbPerviy"
                 AND user_name != "yuldek"
+                AND user_name != "ManagerMediaRust"
                 AND (referral_count > 0 OR start_count > 0)
             ORDER BY total_count DESC 
             LIMIT 10
