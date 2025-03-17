@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Колесо фортуны</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #e1f5fe;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    #wheel-container {
+      position: relative;
+      width: 500px;
+      height: 500px;
+    }
+    canvas {
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      background: #fff;
+    }
+    #pointer {
+      position: absolute;
+      top: -20px;
+      left: calc(50% - 15px);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-bottom: 30px solid #f44336;
+      z-index: 10;
+    }
+    #controls {
+      margin-top: 20px;
+      text-align: center;
+    }
+    #spinButton {
+      background: linear-gradient(135deg, #8e24aa, #e91e63);
+      border: none;
+      border-radius: 30px;
+      padding: 15px 30px;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    #spinButton:active {
+      transform: scale(0.95);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    }
+    #spinsLeft {
+      margin-top: 10px;
+      font-size: 18px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <!-- Указатель -->
+  <div id="pointer"></div>
+  <!-- Колесо -->
+  <div id="wheel-container">
+    <canvas id="wheelCanvas" width="500" height="500"></canvas>
+  </div>
+  <!-- Контролы -->
+  <div id="controls">
+    <button id="spinButton">Крутить колесо</button>
+    <div id="spinsLeft">Осталось прокрутов: <span id="spinsCount">3</span></div>
+  </div>
+  <!-- Подключаем библиотеку для эффекта фейерверков -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const spinButton = document.getElementById('spinButton');
+    const spinsCountElem = document.getElementById('spinsCount');
+
+    // Количество прокрутов - можно передать это значение через параметры Telegram Web App
+    let spinsLeft = 3; // Примерное значение, замените динамическим
+
+    // Призы и цвета для секторов
+    const sectors = [
+      { prize: 'Приз 1', color: '#FF5722' },
+      { prize: 'Приз 2', color: '#FFC107' },
+      { prize: 'Приз 3', color: '#4CAF50' },
+      { prize: 'Приз 4', color: '#2196F3' },
+      { prize: 'Приз 5', color: '#9C27B0' },
+      { prize: 'Приз 6', color: '#E91E63' }
+    ];
+    const numSectors = sectors.length;
+    const sectorAngle = 2 * Math.PI / numSectors;
+    let currentRotation = 0; // Текущий угол поворота колеса
+
+    // Отрисовка колеса
+    function drawWheel() {
+      for(let i = 0; i < numSectors; i++) {
+        const startAngle = currentRotation + i * sectorAngle;
+        const endAngle = startAngle + sectorAngle;
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, canvas.height / 2);
+        ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, startAngle, endAngle);
+        ctx.fillStyle = sectors[i].color;
+        ctx.fill();
+        ctx.save();
+        // Добавляем название приза
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(startAngle + sectorAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 20px Arial";
+        ctx.fillText(sectors[i].prize, canvas.width / 2 - 20, 10);
+        ctx.restore();
+      }
+    }
+
+    // Функция анимации вращения
+    function spinWheel() {
+      if (spinsLeft <= 0) return;
+      spinsLeft -= 1;
+      spinsCountElem.textContent = spinsLeft;
+      spinButton.disabled = true;
+
+      // Вычисляем общий угол вращения с несколькими полными оборотами
+      const extraSpins = Math.floor(Math.random() * 3) + 4; // 4-6 оборотов
+      const randomSectorOffset = Math.random() * sectorAngle;
+      const targetRotation = currentRotation + extraSpins * 2 * Math.PI + randomSectorOffset;
+      const duration = 5000; // длительность анимации (5 секунд)
+      let startTimestamp = null;
+
+      function animate(timestamp) {
+        if (!startTimestamp) startTimestamp = timestamp;
+        let elapsed = timestamp - startTimestamp;
+        let progress = Math.min(elapsed / duration, 1);
+        // Функция замедления (ease out)
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const angle = currentRotation + (targetRotation - currentRotation) * easeOut;
+
+        // Очищаем и устанавливаем вращение
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(angle);
+        ctx.translate(-canvas.width / 2, -canvas.height / 2);
+        drawWheel();
+        ctx.restore();
+
+        if (elapsed < duration) {
+          requestAnimationFrame(animate);
+        } else {
+          currentRotation = angle % (2 * Math.PI);
+          // Расчет выигрышного сектора
+          const normalizedAngle = (currentRotation % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+          const winningIndex = Math.floor(((2 * Math.PI - normalizedAngle) % (2 * Math.PI)) / sectorAngle);
+          const winningPrize = sectors[winningIndex].prize;
+          // Эффект фейерверков
+          confetti({
+            particleCount: 150,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+          setTimeout(() => alert('Поздравляем! Вы выиграли: ' + winningPrize), 300);
+          spinButton.disabled = spinsLeft <= 0;
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    spinButton.addEventListener('click', spinWheel);
+
+    // Инициализация колеса
+    drawWheel();
+
+    // Интеграция с Telegram Mini Apps:
+    if (window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.ready();
+      // Если количество прокрутов передается через initData или через URL-параметры, обновите spinsLeft и spinsCountElem
+      // Например: spinsLeft = Telegram.WebApp.initDataUnsafe.spins || spinsLeft;
+      spinsCountElem.textContent = spinsLeft;
+    }
+  </script>
+</body>
+</html>

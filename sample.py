@@ -33,16 +33,18 @@ bot = AsyncTeleBot(TELEGRAM_TOKEN)
 
 @bot.message_handler(commands=['start'])
 async def start(message):
-    with open(EXCEL_FILE, 'r', encoding='utf-8') as file:
-        reader = csv.reader(file)
-        next(reader)  # пропускаем заголовок если он есть
-        for row in reader:
-            if len(row) > 2:  # проверяем что строка имеет хотя бы 3 столбца
-                print(row[2])
-                await update_config_on_server(row[2])
-            else:
-                print(1)
-                return
+    markup = types.InlineKeyboardMarkup()
+    button = types.InlineKeyboardButton(
+        text="Крутить колесо фортуны",
+        web_app=types.WebAppInfo(url="https://murad0998.github.io/wheel.html/")
+    )
+    markup.add(button)
+
+    await bot.send_message(
+        message.chat.id,
+        "✅ Оплата прошла успешно!\n\n🎉 У вас есть возможность крутить колесо фортуны. Нажмите кнопку ниже для перехода к мини-приложению.",
+        reply_markup=markup
+    )
 
 
 
