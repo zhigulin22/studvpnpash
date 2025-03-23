@@ -520,18 +520,17 @@ async def change_link_vpn(target_user_id,user_id):
     button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button1)
     fl = 1
-    cur_device_uuid=await get_device_uuid(user_id,device)
-    print(cur_device_uuid)
+    cur_device_uuid=await get_device_uuid(target_user_id,device)
     await remove_uuid_from_config(cur_device_uuid)
-    cur_device_time=await get_device_subscription_end_time(user_id,device)
-    cur_status_device=await get_device_payment_status(user_id,device)
+    cur_device_time=await get_device_subscription_end_time(target_user_id,device)
+    cur_status_device=await get_device_payment_status(target_user_id,device)
     if cur_status_device is True:
         await delete_device(cur_device_uuid)
-        await add_device(user_id,fl,device,cur_status_device,cur_device_time)
-        new_uuid = await get_device_uuid(user_id,device)
+        await add_device(target_user_id,fl,device,cur_status_device,cur_device_time)
+        new_uuid = await get_device_uuid(target_user_id,device)
         await update_config_on_server(new_uuid)
-        new_link = await get_vless_link(user_id,device)
-        user_endtime_device = await get_device_subscription_end_time(user_id, device)
+        new_link = await get_vless_link(target_user_id,device)
+        user_endtime_device = await get_device_subscription_end_time(target_user_id, device)
         user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
         await bot.send_message(user_id,f"```{new_link}```",parse_mode='MarkdownV2')
         await send_message_with_deletion(user_id, f"Ваша новая VLESS ссылка.\nВремя окончания подписки: {user_endtime_device_str}", reply_markup=markup)
@@ -1418,7 +1417,6 @@ async def check_subscriptions_and_remove_expired():
         now = datetime.now()
 
         for device_uuid, subscription_end_time in devices:
-            print(device_uuid)
             if subscription_end_time:
                 expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
                 if expiry_date < now:
@@ -1434,8 +1432,7 @@ async def check_subscriptions_and_remove_expired():
         print(f"Ошибка при проверке подписок: {e}")
 
 
-
-
+#получить топ 10 рефералов
 async def get_top_10_referrers():
     conn = None
     try:

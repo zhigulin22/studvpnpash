@@ -36,7 +36,7 @@ async def start(message):
     markup = types.InlineKeyboardMarkup()
     button = types.InlineKeyboardButton(
         text="Крутить колесо фортуны",
-        web_app=types.WebAppInfo(url="https://murad0998.github.io/wheel.html/")
+        web_app=types.WebAppInfo(url="https://zhigulin22.github.io/wheel.html/")
     )
     markup.add(button)
 
