@@ -450,6 +450,7 @@ async def choose_subscription_duration_mounth(call):
                     await update_device_status(device_uuid, True, cur_time_end)
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id,text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```",parse_mode='MarkdownV2')
+                    await bot.send_message(5510185795,text=f"✅ Купил {user_id} на {amount}")
                     user_endtime_device = await get_device_subscription_end_time(user_id, device)
                     user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
                     cur_refer = await get_referrer_id(user_id)
@@ -754,6 +755,7 @@ async def pay_to_proceed(call):
                     await update_device_status(device_uuid, True, cur_time_end)
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id, text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```", parse_mode='MarkdownV2')
+                    await bot.send_message(5510185795, text=f"✅ Купил {user_id} на {amount}")
                     cur_refer = await get_referrer_id(user_id)
                     if cur_refer is not None and cur_refer != 0:
                         cur_fl = await get_flag(user_id)
