@@ -446,7 +446,8 @@ async def choose_subscription_duration_mounth(call):
                 if status == 'succeeded':
                     cur_time_end = datetime.now() + timedelta(days=cur_time)
                     device_uuid = await get_device_uuid(user_id, device)
-                    await update_device_status(device_uuid, device, cur_time_end)
+                    await dop_free_days_for_one(user_id,1)
+                    await update_device_status(device_uuid, True, cur_time_end)
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id,text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```",parse_mode='MarkdownV2')
                     user_endtime_device = await get_device_subscription_end_time(user_id, device)
