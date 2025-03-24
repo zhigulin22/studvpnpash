@@ -25,7 +25,7 @@ from update_schema import update_database_schema
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
 TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
-ADMIN_IDS = [5510185795,1120515812]
+ADMIN_IDS = [5510185795,1120515812,851394287]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
 SERVER_IP = '77.239.100.20'
