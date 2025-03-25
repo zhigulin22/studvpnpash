@@ -1,5 +1,7 @@
 import telebot, json, time
 from telebot.async_telebot import AsyncTeleBot
+import telebot
+from telebot import types
 import asyncssh
 import aiofiles
 import asyncio
@@ -403,6 +405,7 @@ async def choose_subscription_duration_mounth(call):
     device = data[1]
     cur_time = 0
     user_id = call.from_user.id  #
+    user_name = call.from_user.first_name
     amount = 0
     sub = ""
     if subscription_duration == "1month1":
@@ -450,7 +453,7 @@ async def choose_subscription_duration_mounth(call):
                     await update_device_status(device_uuid, True, cur_time_end)
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id,text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```",parse_mode='MarkdownV2')
-                    await bot.send_message(5510185795,text=f"✅ Купил {user_id} на {amount}")
+                    await bot.send_message(5510185795,text=f"✅ Купил {user_name} на {amount}")
                     user_endtime_device = await get_device_subscription_end_time(user_id, device)
                     user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
                     cur_refer = await get_referrer_id(user_id)
@@ -734,6 +737,7 @@ async def pay_to_proceed(call):
     user_payment_status[user_id] = {'status': 'pending', 'attempts': 0}
     if user_status_device is True:
         user_id = call.from_user.id
+        user_name = call.from_user.first_name
         username=call.from_user.username
         plan_text = call.data
         description = f"✅ Подписка на {sub}."
@@ -755,7 +759,7 @@ async def pay_to_proceed(call):
                     await update_device_status(device_uuid, True, cur_time_end)
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id, text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```", parse_mode='MarkdownV2')
-                    await bot.send_message(5510185795, text=f"✅ Купил {user_id} на {amount}")
+                    await bot.send_message(5510185795, text=f"✅ Продлил {user_name} на {amount}")
                     cur_refer = await get_referrer_id(user_id)
                     if cur_refer is not None and cur_refer != 0:
                         cur_fl = await get_flag(user_id)
@@ -1414,21 +1418,51 @@ async def check_subscriptions_and_remove_expired():
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
         # Проверка истёкших подписок
-        cursor.execute("SELECT device_uuid, subscription_end_time FROM user_devices WHERE is_paid != 0")
+        cursor.execute("SELECT device_uuid, subscription_end_time, telegram_id FROM user_devices WHERE is_paid != 0")
         devices = cursor.fetchall()
         conn.close()
         now = datetime.now()
 
-        for device_uuid, subscription_end_time in devices:
+        for device_uuid, subscription_end_time, telegram_id in devices:
             if subscription_end_time:
                 expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
-                if expiry_date < now:
-                    print(f"Подписка истекла для UUID: {device_uuid}. Удаляем из конфигурации.")
+                future_date = now + timedelta(days=31)
+                days_left = (expiry_date - future_date).days
+
+                if days_left < 0:
                     await remove_uuid_from_config(device_uuid)
-                    await update_device_status(device_uuid,False,None)
+                    await update_device_status(device_uuid, False, None)
+                    await bot.send_photo(chat_id=telegram_id,
+                        photo="https://sun9-71.userapi.com/impg/8ABTe0umB9KNVsrHq39a6LTnnUWNbRSPWjYQPQ/eOPs9y2GmWs.jpg?size=604x581&quality=95&sign=d053ad5ba398d7c28905a17f9cfa67cf&type=album",  # Замените на URL вашей картинки
+                        caption=f"""Ваша подписка истекла.\n Мы заметили, что ваша подписка истекла, а значит:
+❌ Блокировки сайтов и соцсетей снова работают против вас
+❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
+❌ Ваши данные без защиты в открытых сетях
 
+⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""")
 
-                cur=now-expiry_date
+                elif days_left == 1:
+                    await bot.send_photo(chat_id=telegram_id,
+                                     photo="https://i.ytimg.com/vi/hDbmmBaokeo/maxresdefault.jpg",
+                                     # Замените на URL вашей картинки
+                                     caption=f"""Ваша подписка закончится через 1 день.\n Мы заметили, что ваша подписка скоро истечет, а значит:
+                    ❌ Блокировки сайтов и соцсетей снова работают против вас
+                    ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
+                    ❌ Ваши данные без защиты в открытых сетях
+
+                    ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""")
+
+                elif days_left == 3:
+                    await bot.send_photo(chat_id=telegram_id,
+                                         photo="https://i.ytimg.com/vi/hDbmmBaokeo/maxresdefault.jpg",
+                                         # Замените на URL вашей картинки
+                                         caption=f"""Ваша подписка закончится через 3 дня.\n Мы заметили, что ваша подписка скоро истечет, а значит:
+                                       ❌ Блокировки сайтов и соцсетей снова работают против вас
+                                       ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
+                                       ❌ Ваши данные без защиты в открытых сетях
+
+                                       ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""")
+
 
 
     except sqlite3.Error as e:
@@ -1484,7 +1518,7 @@ async def start_scheduler():
     scheduler = AsyncIOScheduler()
     await update_top_10_cache()
     scheduler.add_job(update_top_10_cache, 'interval', minutes=20)
-    scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', hours=12)
+    scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', minutes=1)
     scheduler.start()
     print("Планировщик подписок запущен.")
 
