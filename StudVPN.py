@@ -1418,13 +1418,16 @@ async def check_subscriptions_and_remove_expired():
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
         # Проверка истёкших подписок
-        cursor.execute("SELECT device_uuid, subscription_end_time, telegram_id FROM user_devices WHERE is_paid != 0")
+        cursor.execute("SELECT device_uuid, device_type, subscription_end_time, telegram_id FROM user_devices WHERE is_paid != 0")
         devices = cursor.fetchall()
         conn.close()
         now = datetime.now()
+        markup = types.InlineKeyboardMarkup()
+        button1 = types.InlineKeyboardButton("👉 Купить ВПН", callback_data='buy_vpn')
+        markup.add(button1)
 
-        for device_uuid, subscription_end_time, telegram_id in devices:
-            if subscription_end_time:
+        for device_uuid, device_type, subscription_end_time, telegram_id in devices:
+            if subscription_end_time and device_type == "iPhone":
                 expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
                 future_date = now + timedelta(days=31)
                 days_left = (expiry_date - future_date).days
@@ -1439,7 +1442,7 @@ async def check_subscriptions_and_remove_expired():
 ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
 ❌ Ваши данные без защиты в открытых сетях
 
-⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""")
+⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
 
                 elif days_left == 1:
                     await bot.send_photo(chat_id=telegram_id,
@@ -1450,7 +1453,7 @@ async def check_subscriptions_and_remove_expired():
                     ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
                     ❌ Ваши данные без защиты в открытых сетях
 
-                    ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""")
+                    ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
 
                 elif days_left == 3:
                     await bot.send_photo(chat_id=telegram_id,
@@ -1461,7 +1464,7 @@ async def check_subscriptions_and_remove_expired():
                                        ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
                                        ❌ Ваши данные без защиты в открытых сетях
 
-                                       ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""")
+                                       ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
 
 
 
