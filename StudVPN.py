@@ -405,7 +405,7 @@ async def choose_subscription_duration_mounth(call):
     device = data[1]
     cur_time = 0
     user_id = call.from_user.id  #
-    user_name = call.from_user.first_name
+    user_name = call.from_user.username
     amount = 0
     sub = ""
     if subscription_duration == "1month1":
@@ -737,9 +737,7 @@ async def pay_to_proceed(call):
     user_payment_status[user_id] = {'status': 'pending', 'attempts': 0}
     if user_status_device is True:
         user_id = call.from_user.id
-        user_name = call.from_user.first_name
-        username=call.from_user.username
-        plan_text = call.data
+        user_name = call.from_user.username
         description = f"✅ Подписка на {sub}."
         # 📤 Создание платежа через ЮKassa
         payment_link, payment_id = await create_payment(amount, description)
