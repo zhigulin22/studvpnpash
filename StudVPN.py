@@ -1427,7 +1427,7 @@ async def check_subscriptions_and_remove_expired():
         for device_uuid, device_type, subscription_end_time, telegram_id in devices:
             if subscription_end_time and device_type == "iPhone":
                 expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
-                future_date = now + timedelta(days=31)
+                future_date = now
                 days_left = (expiry_date - future_date).days
 
                 if days_left < 0:
