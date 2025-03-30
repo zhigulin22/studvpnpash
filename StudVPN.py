@@ -363,6 +363,8 @@ async def join_raffle(call):
 
     # Проверяем наличие активной подписки (для примера используем устройство "iPhone")
     current_tickets = await get_raffle_tickets(user_id)
+    if current_tickets == 0:
+        await add_raffle_tickets(user_id, 1)
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("🎲 Купить", callback_data='buy_vpn')
     markup.add(button1)
