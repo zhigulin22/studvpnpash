@@ -295,7 +295,7 @@ async def start(message):
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
     # новая кнопка участия в розыгрыше
-    button7 = types.InlineKeyboardButton("🎲 Участвовать в розыгрыше", callback_data='join_raffle1')
+    button7 = types.InlineKeyboardButton("🎲 Розыгрыш", callback_data='join_raffle1')
 
     markup.add(button1, button2)
     markup.add(button3, button5)
@@ -657,7 +657,7 @@ async def back_to_main_menu(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    button7 = types.InlineKeyboardButton("🎲 Участвовать в розыгрыше", callback_data='join_raffle1')
+    button7 = types.InlineKeyboardButton("🎲 Розыгрыш", callback_data='join_raffle1')
     markup.add(button1, button2)
     markup.add(button3, button5)
     markup.add(button4, button6)
