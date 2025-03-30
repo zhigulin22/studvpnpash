@@ -33,18 +33,9 @@ bot = AsyncTeleBot(TELEGRAM_TOKEN)
 
 @bot.message_handler(commands=['start'])
 async def start(message):
-    markup = types.InlineKeyboardMarkup()
-    button = types.InlineKeyboardButton(
-        text="Крутить колесо фортуны",
-        web_app=types.WebAppInfo(url="https://zhigulin22.github.io/wheel.html/")
-    )
-    markup.add(button)
-
-    await bot.send_message(
-        message.chat.id,
-        "✅ Оплата прошла успешно!\n\n🎉 У вас есть возможность крутить колесо фортуны. Нажмите кнопку ниже для перехода к мини-приложению.",
-        reply_markup=markup
-    )
+    new = "d27cefd0-9bbe-41ce-8303-5309d79eeac6"
+    print(2)
+    await update_config_on_server(new)
 
 
 
@@ -80,6 +71,7 @@ async def update_config_on_server(new_uuid):
 
             # Перезапуск Xray после обновления конфига
             await restart_xray(ssh)
+            print(1)
 
     except Exception as e:
         print(f"Ошибка при обновлении конфигурации: {e}")

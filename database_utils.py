@@ -35,6 +35,49 @@ async def format_subscription_end_time(subscription_end_time):
             print(f"Error: Could not parse date string '{subscription_end_time}'. Returning None.")
             return subscription_end_time
 
+
+async def add_raffle_tickets(user_id, ticket_count):
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        # Проверяем, существует ли уже запись для пользователя
+        cursor.execute("SELECT ticket_count FROM raffle_entries WHERE telegram_id = ?", (user_id,))
+        result = cursor.fetchone()
+        if result:
+            # Если запись существует, прибавляем к существующему количеству
+            new_ticket_count = result[0] + ticket_count
+            cursor.execute("UPDATE raffle_entries SET ticket_count = ? WHERE telegram_id = ?", (new_ticket_count, user_id))
+        else:
+            # Если записи нет, вставляем новую
+            cursor.execute("""
+                INSERT INTO raffle_entries (telegram_id, ticket_count)
+                VALUES (?, ?)
+            """, (user_id, ticket_count))
+        conn.commit()
+        return True
+    except sqlite3.Error as e:
+        print(f"Ошибка начисления билетов: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+async def get_raffle_tickets(user_id):
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT ticket_count FROM raffle_entries WHERE telegram_id = ?", (user_id,))
+        result = cursor.fetchone()
+        return result[0] if result else 0
+    except sqlite3.Error as e:
+        print(f"Ошибка получения количества билетов: {e}")
+        return 0
+    finally:
+        if conn:
+            conn.close()
+
 # Укажите ваш файл базы данных
 
 async def create_database():

@@ -22,7 +22,7 @@ import asyncio, asyncssh
 logging.getLogger('asyncssh').setLevel(logging.WARNING)
 from telebot import types
 from datetime import datetime, timedelta
-from database_utils import create_database,get_all_pay,update_all_pay,update_purchase_amount,update_renewal_amount,update_flag,get_purchase_amount,get_renewal_amount,get_flag, get_username,update_username,get_telegram_id_by_username,update_referral_in,get_referral_in_count,get_agree_status,update_agree_status, update_referrer_id,add_user, get_referrer_id, format_subscription_end_time,add_device,get_user_referral_count,get_device_subscription_end_time, delete_user, delete_device, get_device_payment_status,get_device_uuid,update_device_status, update_referral_count,get_user_data,get_all_users,check_user_exists
+from database_utils import create_database,add_raffle_tickets,get_all_pay,update_all_pay,get_raffle_tickets,update_purchase_amount,update_renewal_amount,update_flag,get_purchase_amount,get_renewal_amount,get_flag, get_username,update_username,get_telegram_id_by_username,update_referral_in,get_referral_in_count,get_agree_status,update_agree_status, update_referrer_id,add_user, get_referrer_id, format_subscription_end_time,add_device,get_user_referral_count,get_device_subscription_end_time, delete_user, delete_device, get_device_payment_status,get_device_uuid,update_device_status, update_referral_count,get_user_data,get_all_users,check_user_exists
 from update_schema import update_database_schema
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
@@ -86,6 +86,8 @@ async def restart_xray(ssh):
         result = await ssh.run('systemctl restart xray',check=True)
     except Exception as e:
         print(f"Ошибка при перезапуске Xray: {e}")
+
+
 
 
 
@@ -292,13 +294,93 @@ async def start(message):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    #button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
+    # новая кнопка участия в розыгрыше
+    button7 = types.InlineKeyboardButton("🎲 Участвовать в розыгрыше", callback_data='join_raffle1')
+
     markup.add(button1, button2)
     markup.add(button3, button5)
     markup.add(button4, button6)
-    #markup.add(button5)
+    markup.add(button7)  # кнопка размещается отдельно в нижнем ряду
 
     await bot.send_message(user_id, welcome_message, reply_markup=markup)
+
+
+async def check_channel_subscription(user_id):
+    channel_username = "@HugVPN"  # Замените на имя вашего канала
+    try:
+        member = await bot.get_chat_member(channel_username, user_id)
+        # Если пользователь является создателем, администратором или участником – считаем, что он подписан
+        if member.status in ["creator", "administrator", "member"]:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(f"Ошибка проверки подписки пользователя {user_id}: {e}")
+        return False
+
+
+#Розыгрыш
+@bot.callback_query_handler(func=lambda call: call.data == "join_raffle1")
+async def join_raffle(call):
+    user_id = call.from_user.id
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("🎲 Участвовать", callback_data='join_raffle')
+    markup.add(button1)
+    await bot.send_message(user_id, f"""🎁Проводится розыгрыш, в котором будет объявлено 10 победителей среди вас 
+Какие призы:
+🥇1 место - Телеграм Премиум на год + годовая подписка ВПН
+🥈2 место - 3 месяца Телеграм Премиум + годовая подписка ВПН
+🥉3 место - 1 месяц Телеграм Премиум + годовая подписка ВПН
+🎫4 - 6 место - Полугодовая подписка ВПН
+🎫7 - 10 место - 3 месяца подписки ВПН
+
+🔑Чтоб участвовать в розыгрыше, нужно всего лишь подписаться на канал https://t.me/HugVPN
+Победитель будет выбираться рандомно из базы тех людей, которые продлили или купили подписку в период с 30 марта - 30 апреля
+
+📊Ваше кол-во мест в таблице будет равняться суммарному кол-ву месяцев, на которое вы продлили или купили подписку
+Вы можете купить два раза по 6 месяц и у вас будет 12 мест в таблице, что сильно повышает шанс выиграть""", reply_markup=markup)
+
+
+
+    # Проверяем подписку на канал
+
+
+
+
+#Розыгрыш
+@bot.callback_query_handler(func=lambda call: call.data == "join_raffle")
+async def join_raffle(call):
+    user_id = call.from_user.id
+
+    # Проверяем подписку на канал
+    is_subscribed = await check_channel_subscription(user_id)
+    if not is_subscribed:
+        await send_message_with_deletion(
+            call.message.chat.id,
+            "❌ Чтобы участвовать в розыгрыше, подпишитесь на наш канал https://t.me/HugVPN!"
+        )
+        return
+
+    # Проверяем наличие активной подписки (для примера используем устройство "iPhone")
+    current_tickets = await get_raffle_tickets(user_id)
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("🎲 Купить", callback_data='buy_vpn')
+    markup.add(button1)
+    if current_tickets == 0:
+        await send_message_with_deletion(
+            call.message.chat.id,
+            "❌ У вас сейчас нет билетов, купленных в период с 30 марта по 30 апреля. Для участия в розыгрыше необходимо купить или продлить подписку!",reply_markup=markup
+        )
+        return
+    markup1 = types.InlineKeyboardMarkup()
+    button2 = types.InlineKeyboardButton("🚀Главное меню", callback_data='main_menu')
+    markup1.add(button2)
+    await send_message_with_deletion(
+        call.message.chat.id,
+        f"✅ Вы участвуете в розыгрыше! Сейчас у вас {current_tickets} билет(ов). Итоги 30 апреля",reply_markup=markup1
+    )
+
+
 
 
 #Выдает информацию о нас
@@ -454,6 +536,8 @@ async def choose_subscription_duration_mounth(call):
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id,text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```",parse_mode='MarkdownV2')
                     await bot.send_message(5510185795,text=f"✅ Купил {user_name} на {amount}")
+                    #Розыгрыш
+                    await add_raffle_tickets(user_id, cur_time//30)
                     user_endtime_device = await get_device_subscription_end_time(user_id, device)
                     user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
                     cur_refer = await get_referrer_id(user_id)
@@ -570,11 +654,11 @@ async def back_to_main_menu(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    #button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
+    button7 = types.InlineKeyboardButton("🎲 Участвовать в розыгрыше", callback_data='join_raffle1')
     markup.add(button1, button2)
     markup.add(button3, button5)
     markup.add(button4, button6)
-    #markup.add(button5)
+    markup.add(button7)
     await send_message_with_deletion(call.message.chat.id,welcome_message, markup)
 
 #Узнать свой ВПН
@@ -758,6 +842,8 @@ async def pay_to_proceed(call):
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id, text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```", parse_mode='MarkdownV2')
                     await bot.send_message(5510185795, text=f"✅ Продлил {user_name} на {amount}")
+                    # Розыгрыш
+                    await add_raffle_tickets(user_id, cur_time // 30)
                     cur_refer = await get_referrer_id(user_id)
                     if cur_refer is not None and cur_refer != 0:
                         cur_fl = await get_flag(user_id)
@@ -1528,7 +1614,7 @@ async def main():
     await setup_menu()  # Настраиваем команды бота
     #await update_referral_in(1568939620,2)
     #await update_referral_in(851394287, 1)
-    #await update_database_schema()
+    await update_database_schema()
     #await update_device_status("4a96be34-251e-4712-a93b-d3c7dbecaeaa",False,None)
     #await create_database()  # Создаём базу данных
     await start_scheduler()  #
