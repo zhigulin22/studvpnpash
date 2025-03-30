@@ -365,13 +365,14 @@ async def join_raffle(call):
     current_tickets = await get_raffle_tickets(user_id)
     if current_tickets == 0:
         await add_raffle_tickets(user_id, 1)
+        current_tickets = 1
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("🎲 Купить", callback_data='buy_vpn')
     markup.add(button1)
-    if current_tickets == 0:
+    if current_tickets == 1:
         await send_message_with_deletion(
             call.message.chat.id,
-            "❌ У вас сейчас нет билетов, купленных в период с 30 марта по 30 апреля. Для участия в розыгрыше необходимо купить или продлить подписку!",reply_markup=markup
+            "❌ У вас сейчас 1 билет, за подписку на канал. Можно увеличить шансы, купив или продлив подписку",reply_markup=markup
         )
         return
     markup1 = types.InlineKeyboardMarkup()
