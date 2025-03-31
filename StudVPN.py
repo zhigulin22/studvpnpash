@@ -278,7 +278,8 @@ async def start(message):
         if referrer is not None:
             cur_col_in = await get_referral_in_count(referrer)
             await update_referral_in(referrer,cur_col_in+1)
-            await dop_free_days(user_id, 37)
+            await dop_free_days_for_one(user_id, 37)
+            await dop_free_days_for_one(referrer, 9)
         else:
             await dop_free_days(user_id, 30)
             await user_has_registered_in_bot(user_id)
