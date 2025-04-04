@@ -1520,7 +1520,7 @@ async def check_subscriptions_and_remove_expired():
                 future_date = now
                 days_left = (expiry_date - future_date).days
 
-                if days_left < 0:
+                if days_left <= 0:
                     await remove_uuid_from_config(device_uuid)
                     await update_device_status(device_uuid, False, None)
                     await bot.send_photo(chat_id=telegram_id,
@@ -1553,7 +1553,13 @@ async def check_subscriptions_and_remove_expired():
                                        ❌ Ваши данные без защиты в открытых сетях
 
                                        ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
-
+            elif subscription_end_time:
+                expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
+                future_date = now
+                days_left = (expiry_date - future_date).days
+                if days_left <= 0:
+                    await remove_uuid_from_config(device_uuid)
+                    await update_device_status(device_uuid, False, None)
 
 
     except sqlite3.Error as e:
