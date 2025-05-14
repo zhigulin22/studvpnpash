@@ -1621,8 +1621,7 @@ async def start_scheduler():
     scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', days=1)
     scheduler.start()
     print("Планировщик подписок запущен.")
-
-
+    #fmf
 async def main():
     await setup_menu()  # Настраиваем команды бота
     #await update_referral_in(1568939620,2)
@@ -1632,7 +1631,6 @@ async def main():
     #await create_database()  # Создаём базу данных
     await start_scheduler()  #
     await bot.polling(none_stop=True)
-
 
 
 if __name__ == '__main__':
