@@ -522,6 +522,7 @@ async def choose_subscription_duration_mounth(call):
     if user_status_device is not True:
         user_id = call.from_user.id
         plan_text = call.data
+        col = 0
         description = f"✅ Подписка на {sub}."
         # 📤 Создание платежа через ЮKassa
         payment_link, payment_id = await create_payment(amount, description)
@@ -541,6 +542,9 @@ async def choose_subscription_duration_mounth(call):
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id,text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```",parse_mode='MarkdownV2')
                     await bot.send_message(5510185795,text=f"✅ Купил {user_name} на {amount}")
+                    col = col + 1
+                    if col%3 == 1:
+                        await bot.send_message(1120515812, text=f"Мурад СОСИ ЧЛЕН \n ✅ Купил {user_name} на {amount}")
                     #Розыгрыш
                     await add_raffle_tickets(user_id, cur_time//30)
                     user_endtime_device = await get_device_subscription_end_time(user_id, device)
@@ -823,6 +827,7 @@ async def pay_to_proceed(call):
     markup = types.InlineKeyboardMarkup()
     button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button2)
+    col = 0
     user_payment_status[user_id] = {'status': 'pending', 'attempts': 0}
     if user_status_device is True:
         user_id = call.from_user.id
@@ -847,6 +852,9 @@ async def pay_to_proceed(call):
                     vless_link = await get_vless_link(user_id, device)
                     await bot.send_message(call.message.chat.id, text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```", parse_mode='MarkdownV2')
                     await bot.send_message(5510185795, text=f"✅ Продлил {user_name} на {amount}")
+                    col = col + 1
+                    if col % 3 == 1:
+                        await bot.send_message(1120515812, text=f"Мурад СОСИ ЧЛЕН \n ✅ Продлил {user_name} на {amount}")
                     # Розыгрыш
                     await add_raffle_tickets(user_id, cur_time // 30)
                     cur_refer = await get_referrer_id(user_id)
