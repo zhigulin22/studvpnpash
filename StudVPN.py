@@ -1516,7 +1516,7 @@ async def check_subscriptions_and_remove_expired():
         markup.add(button1)
 
         for device_uuid, device_type, subscription_end_time, telegram_id in devices:
-            if subscription_end_time and device_type == "iPhone":
+            if subscription_end_time:
                 expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
                 future_date = now
                 days_left = (expiry_date - future_date).days
@@ -1618,7 +1618,7 @@ async def start_scheduler():
     scheduler = AsyncIOScheduler()
     await update_top_10_cache()
     scheduler.add_job(update_top_10_cache, 'interval', minutes=20)
-    scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', days=1)
+    scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', hours=10)
     scheduler.start()
     print("Планировщик подписок запущен.")
     #fmf
