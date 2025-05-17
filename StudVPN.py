@@ -189,7 +189,7 @@ async def dop_free_days_for_one(user_id, col_days):
 async def dop_free_days(user_id, col_days):
     referrer_id = await get_referrer_id(user_id)
     print(referrer_id)
-    device_comb=["iPhone", "Android", "Mac", "Windows"]
+    device_comb=["iPhone"]
     for device in device_comb:
         cur_time_end = await get_device_subscription_end_time(user_id, device)
         if cur_time_end != "None" and cur_time_end is not None:
@@ -235,7 +235,7 @@ async def dop_free_days(user_id, col_days):
 #Написать слова за регистраци
 async def user_has_registered_in_bot(user_id):
     chat_id_from_recipient = user_id
-    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 30 суток пользования нашим ВПН на все устройства, за регистрацию в боте🎁")
+    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 14 суток пользования нашим ВПН на все устройства, за регистрацию в боте🎁")
 
 
 
@@ -279,10 +279,10 @@ async def start(message):
         if referrer is not None:
             cur_col_in = await get_referral_in_count(referrer)
             await update_referral_in(referrer,cur_col_in+1)
-            await dop_free_days_for_one(user_id, 37)
-            await dop_free_days_for_one(referrer, 9)
+            await dop_free_days_for_one(user_id, 21)
+            await dop_free_days_for_one(referrer, 5)
         else:
-            await dop_free_days(user_id, 30)
+            await dop_free_days(user_id, 14)
             await user_has_registered_in_bot(user_id)
     # Создаем inline-клавиатуру
     cur_user_name = await get_username(user_id)
@@ -297,12 +297,12 @@ async def start(message):
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
     # новая кнопка участия в розыгрыше
-    button7 = types.InlineKeyboardButton("🎲 Розыгрыш", callback_data='join_raffle1')
+    #button7 = types.InlineKeyboardButton("🎲 Розыгрыш", callback_data='join_raffle1')
 
     markup.add(button1, button2)
     markup.add(button3, button5)
     markup.add(button4, button6)
-    markup.add(button7)  # кнопка размещается отдельно в нижнем ряду
+    #markup.add(button7)  # кнопка размещается отдельно в нижнем ряду
 
     await bot.send_message(user_id, welcome_message, reply_markup=markup)
 
@@ -663,11 +663,11 @@ async def back_to_main_menu(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    button7 = types.InlineKeyboardButton("🎲 Розыгрыш", callback_data='join_raffle1')
+    #button7 = types.InlineKeyboardButton("🎲 Розыгрыш", callback_data='join_raffle1')
     markup.add(button1, button2)
     markup.add(button3, button5)
     markup.add(button4, button6)
-    markup.add(button7)
+    #markup.add(button7)
     await send_message_with_deletion(call.message.chat.id,welcome_message, markup)
 
 #Узнать свой ВПН
@@ -1528,7 +1528,7 @@ async def check_subscriptions_and_remove_expired():
                 expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
                 future_date = now
                 days_left = (expiry_date - future_date).days
-
+                print(days_left)
                 if days_left <= 0:
                     await remove_uuid_from_config(device_uuid)
                     await update_device_status(device_uuid, False, None)
@@ -1626,7 +1626,7 @@ async def start_scheduler():
     scheduler = AsyncIOScheduler()
     await update_top_10_cache()
     scheduler.add_job(update_top_10_cache, 'interval', minutes=20)
-    scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', hours=10)
+    scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', minutes=1)
     scheduler.start()
     print("Планировщик подписок запущен.")
     #fmf
