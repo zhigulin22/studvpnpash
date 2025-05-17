@@ -1571,10 +1571,12 @@ async def check_subscriptions_and_remove_expired():
                     await update_device_status(device_uuid, False, None)
 
 
-    except sqlite3.Error as e:
-        print(f"Ошибка при проверке подписок: {e}")
 
-
+    except ApiTelegramException as e:
+        if e.error_code == 403:
+            print(f"Ошибка: пользователь заблокировал бота.")
+        else:
+            print(f"Ошибка API Telegram: {e}")
 
 
 #получить топ 10 рефералов
