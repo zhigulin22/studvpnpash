@@ -1628,7 +1628,7 @@ async def start_scheduler():
     scheduler = AsyncIOScheduler()
     await update_top_10_cache()
     scheduler.add_job(update_top_10_cache, 'interval', minutes=20)
-    scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', hours=1)
+    scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', hours=24)
     scheduler.start()
     print("Планировщик подписок запущен.")
     #fmf
