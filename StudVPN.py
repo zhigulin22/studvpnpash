@@ -31,11 +31,11 @@ TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
 ADMIN_IDS = [5510185795,1120515812,851394287]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
-SERVER_IP = '185.119.17.106'
+SERVER_IP = '77.239.100.20'
 DATABASE_FILE = "vpn5_keys.db"
 SERVER_PORT = 443  # Обычно 22 для SSH
 SERVER_USERNAME = 'root'
-SERVER_PASSWORD = 't2XPHAAZCv'
+SERVER_PASSWORD = 'HX6qP0WlYzox'
 CONFIG_FILE_PATH = '/usr/local/etc/xray/config.json'
 UUID_KEYWORD = "id: "
 
@@ -1546,22 +1546,29 @@ async def check_subscriptions_and_remove_expired():
                                      photo="https://i.ytimg.com/vi/hDbmmBaokeo/maxresdefault.jpg",
                                      # Замените на URL вашей картинки
                                      caption=f"""Ваша подписка закончится через 1 день.\n Мы заметили, что ваша подписка скоро истечет, а значит:
-                ❌ Блокировки сайтов и соцсетей снова работают против вас
-                ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
-                ❌ Ваши данные без защиты в открытых сетях
+                    ❌ Блокировки сайтов и соцсетей снова работают против вас
+                    ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
+                    ❌ Ваши данные без защиты в открытых сетях
 
-                ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
+                    ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
 
                 elif days_left == 3:
                     await bot.send_photo(chat_id=telegram_id,
                                          photo="https://i.ytimg.com/vi/hDbmmBaokeo/maxresdefault.jpg",
                                          # Замените на URL вашей картинки
                                          caption=f"""Ваша подписка закончится через 3 дня.\n Мы заметили, что ваша подписка скоро истечет, а значит:
-                ❌ Блокировки сайтов и соцсетей снова работают против вас
-                ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
-                ❌ Ваши данные без защиты в открытых сетях
+                                       ❌ Блокировки сайтов и соцсетей снова работают против вас
+                                       ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
+                                       ❌ Ваши данные без защиты в открытых сетях
 
-                ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
+                                       ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
+            elif subscription_end_time:
+                expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
+                future_date = now
+                days_left = (expiry_date - future_date).days
+                if days_left <= 0:
+                    await remove_uuid_from_config(device_uuid)
+                    await update_device_status(device_uuid, False, None)
 
 
 
