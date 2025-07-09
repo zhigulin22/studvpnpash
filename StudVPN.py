@@ -623,7 +623,7 @@ async def change_link_vpn(target_user_id,user_id):
     cur_device_time=await get_device_subscription_end_time(target_user_id,device)
     cur_status_device=await get_device_payment_status(target_user_id,device)
     if cur_status_device is True:
-        #await delete_device(cur_device_uuid)
+        await delete_device(cur_device_uuid)
         await add_device(target_user_id,fl,device,cur_status_device,cur_device_time)
         new_uuid = await get_device_uuid(target_user_id,device)
         await update_config_on_server(new_uuid)
