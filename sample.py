@@ -14,12 +14,12 @@ import uuid
 import os  # Import the 'os' module
 import asyncio
 
-SERVER_IP = '77.239.100.20'
+SERVER_IP = '185.119.17.106'
 EXCEL_FILE = '/Users/glebstudent/Downloads/exported_all_db (1)/user_devices.csv'
 SERVER_PORT = 443  # Обычно 22 для SSH
 SERVER_USERNAME = 'root'
 TELEGRAM_TOKEN = '7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE'
-SERVER_PASSWORD = 'HX6qP0WlYzox'
+SERVER_PASSWORD = 't2XPHAAZCv'
 CONFIG_FILE_PATH = '/usr/local/etc/xray/config.json'
 UUID_KEYWORD = "id: "
 DATABASE_FILE = "vpn5_keys.db"
