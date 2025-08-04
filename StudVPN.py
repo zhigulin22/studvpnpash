@@ -31,7 +31,7 @@ TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
 ADMIN_IDS = [5510185795,1120515812,851394287]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
-SERVER_IP = '77.239.100.20'
+SERVER_IP = '213.165.37.141'
 DATABASE_FILE = "vpn5_keys.db"
 SERVER_PORT = 443  # Обычно 22 для SSH
 SERVER_USERNAME = 'root'
@@ -297,12 +297,12 @@ async def start(message):
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
     # новая кнопка участия в розыгрыше
-    #button7 = types.InlineKeyboardButton("🎲 Розыгрыш", callback_data='join_raffle1')
+    button7 = types.InlineKeyboardButton("🎲 Поменять конфиг", callback_data='change_link')
 
     markup.add(button1, button2)
     markup.add(button3, button5)
     markup.add(button4, button6)
-    #markup.add(button7)  # кнопка размещается отдельно в нижнем ряду
+    markup.add(button7)  # кнопка размещается отдельно в нижнем ряду
 
     await bot.send_message(user_id, welcome_message, reply_markup=markup)
 
@@ -610,19 +610,21 @@ async def choose_subscription_duration_mounth(call):
 
 
 
-bot.callback_query_handler(func=lambda call: call.data == "change_link")
-async def change_link_vpn(target_user_id,user_id):
+@bot.callback_query_handler(func=lambda call: call.data == "change_link")
+async def change_link(call):
+    print(1)
+    target_user_id=call.from_user.id
     device = "iPhone"
     #user_id=call.from_user.id
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button1)
     fl = 1
-    cur_device_uuid=await get_device_uuid(target_user_id,device)
-    await remove_uuid_from_config(cur_device_uuid)
-    cur_device_time=await get_device_subscription_end_time(target_user_id,device)
     cur_status_device=await get_device_payment_status(target_user_id,device)
     if cur_status_device is True:
+        cur_device_uuid = await get_device_uuid(target_user_id, device)
+        await remove_uuid_from_config(cur_device_uuid)
+        cur_device_time = await get_device_subscription_end_time(target_user_id, device)
         await delete_device(cur_device_uuid)
         await add_device(target_user_id,fl,device,cur_status_device,cur_device_time)
         new_uuid = await get_device_uuid(target_user_id,device)
@@ -630,10 +632,10 @@ async def change_link_vpn(target_user_id,user_id):
         new_link = await get_vless_link(target_user_id,device)
         user_endtime_device = await get_device_subscription_end_time(target_user_id, device)
         user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
-        await bot.send_message(user_id,f"```{new_link}```",parse_mode='MarkdownV2')
-        await send_message_with_deletion(user_id, f"Ваша новая VLESS ссылка.\nВремя окончания подписки: {user_endtime_device_str}", reply_markup=markup)
+        await bot.send_message(target_user_id,f"```{new_link}```",parse_mode='MarkdownV2')
     else:
-        await send_message_with_deletion(user_id,f"У вас нет активного ключа, купите его",reply_markup=markup)
+        print(1)
+        await send_message_with_deletion(target_user_id,f"У вас нет активного ключа, купите его",reply_markup=markup)
 
 
 #Обработчик команды "Назад"
@@ -663,11 +665,11 @@ async def back_to_main_menu(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    #button7 = types.InlineKeyboardButton("🎲 Розыгрыш", callback_data='join_raffle1')
+    button7 = types.InlineKeyboardButton("🎲 Поменять конфиг", callback_data='change_link')
     markup.add(button1, button2)
     markup.add(button3, button5)
     markup.add(button4, button6)
-    #markup.add(button7)
+    markup.add(button7)
     await send_message_with_deletion(call.message.chat.id,welcome_message, markup)
 
 #Узнать свой ВПН
@@ -1242,7 +1244,7 @@ async def handle_admin_action(message: types.Message):
                 message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
             )
         else:
-            await change_link_vpn(target_user_id,user_id)
+            await change_link(target_user_id)
 
         # Очищаем задачу
         del admin_sms[user_id]
@@ -1579,6 +1581,8 @@ async def check_subscriptions_and_remove_expired():
             print(f"Ошибка API Telegram: {e}")
 
 
+
+
 #получить топ 10 рефералов
 async def get_top_10_referrers():
     conn = None
@@ -1645,3 +1649,4 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
