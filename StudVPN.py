@@ -39,14 +39,11 @@ TELEGRAM_TOKEN = '8331624604:AAH1sBO4tvHGdGgSs7z6S6xpVGTQxnTPWM4'
 ADMIN_IDS = [5510185795,851394287]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
-ADMIN_IDS = [5510185795, 851394287]
-# 8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
-# 7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
-SERVER_IP = '213.165.37.141'
+SERVER_IP = '77.110.124.72'
 DATABASE_FILE = "newvpn_keys.db"
 SERVER_PORT = 443  # Обычно 22 для SSH
 SERVER_USERNAME = 'root'
-SERVER_PASSWORD = 'HX6qP0WlYzox'
+SERVER_PASSWORD = 'AQoQRl3LgYnz'
 CONFIG_FILE_PATH = '/usr/local/etc/xray/config.json'
 UUID_KEYWORD = "id: "
 
@@ -281,7 +278,7 @@ async def start(message):
             cur_col_in = await get_referral_in_count(referrer)
             await update_referral_in(referrer, cur_col_in + 1)
             await dop_free_days_for_one(user_id, 19)
-            await dop_free_days_for_one(referrer, 14)
+            await dop_free_days_for_one(referrer, 5)
         else:
             await dop_free_days(user_id, 14)
             await user_has_registered_in_bot(user_id)
