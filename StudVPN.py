@@ -1664,7 +1664,7 @@ async def main():
     # await update_referral_in(851394287, 1)
     # await update_database_schema()
     # await update_device_status("4a96be34-251e-4712-a93b-d3c7dbecaeaa",False,None)
-    # await create_database()  # Создаём базу данных
+    #await create_database()  # Создаём базу данных
     await start_scheduler()  #
     await bot.polling(none_stop=True)
 
