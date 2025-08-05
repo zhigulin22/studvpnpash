@@ -64,7 +64,7 @@ top_10_cache = []
 
 async def get_vless_link(user_id, device_type):
     user_uuid_from_device = await get_device_uuid(user_id, device_type)
-    vless_link = f"vless://{user_uuid_from_device}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=6zedx9tc-YP4Lyh8xFp6LtEvvmCB9iAtoNNc3tt5Ons&sni=whatsapp.com&sid=916e9946&spx=%2F&email={user_id}#HugVPN"
+    vless_link = f"vless://{user_uuid_from_device}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=6zedx9tc-YP4Lyh8xFp6LtEvvmCB9iAtoNNc3tt5Ons&sni=whatsapp.com&sid=916e9946&spx=%2F&email={user_id}#GupVPN"
     # Обновление конфигурации на сервере
     return vless_link
 
@@ -84,7 +84,7 @@ async def send_message_with_deletion(chat_id, text, reply_markup=None):
 
 async def generate_vless_link_for_buy(user_id, message_chat_id, device_type):
     user_uuid = await get_device_uuid(user_id, device_type)
-    vless_link = f"vless://{user_uuid}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=6zedx9tc-YP4Lyh8xFp6LtEvvmCB9iAtoNNc3tt5Ons&sni=whatsapp.com&sid=916e9946&spx=%2F&email={user_id}#HugVPN"
+    vless_link = f"vless://{user_uuid}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=6zedx9tc-YP4Lyh8xFp6LtEvvmCB9iAtoNNc3tt5Ons&sni=whatsapp.com&sid=916e9946&spx=%2F&email={user_id}#GupVPN"
 
     # Обновление конфигурации на сервере
     await update_config_on_server(user_uuid)
@@ -245,7 +245,7 @@ async def user_has_registered_in_bot(user_id):
 async def start(message):
     user_name = message.from_user.first_name
     welcome_message = (
-        f"""{user_name}, 🚀 Добро пожаловать в HugVPN – ваш надёжный и быстрый VPN!
+        f"""{user_name}, 🚀 Добро пожаловать в GUP VPN – ваш надёжный и быстрый VPN!
 
 🔒 Полная анонимность и защита данных
 ⚡ Максимальная скорость без ограничений
@@ -280,8 +280,8 @@ async def start(message):
         if referrer is not None:
             cur_col_in = await get_referral_in_count(referrer)
             await update_referral_in(referrer, cur_col_in + 1)
-            await dop_free_days_for_one(user_id, 21)
-            await dop_free_days_for_one(referrer, 5)
+            await dop_free_days_for_one(user_id, 19)
+            await dop_free_days_for_one(referrer, 14)
         else:
             await dop_free_days(user_id, 14)
             await user_has_registered_in_bot(user_id)
@@ -309,7 +309,7 @@ async def start(message):
 
 
 async def check_channel_subscription(user_id):
-    channel_username = "@HugVPN"  # Замените на имя вашего канала
+    channel_username = "@GUP_VPN"  # Замените на имя вашего канала
     try:
         member = await bot.get_chat_member(channel_username, user_id)
         # Если пользователь является создателем, администратором или участником – считаем, что он подписан
@@ -401,8 +401,8 @@ async def buy_vpn(call):
 - Защищать свои данные от посторонних глаз с помощью современных технологий шифрования.
 - Экономить время — настройка занимает всего пару кликов, а после первого подключения нужно будет просто нажимать 1 кнопку!
 
-Почему выбирают HugVPN?
-💰 Один из самых дешевых тарифов (2.5 рубля/день)
+Почему выбирают GUPVPN?
+💰 Один из самых дешевых тарифов (5 рублей/день)
 🚀 Высокая скорость: никаких тормозов, только комфортный серфинг.
 🔒 Безопасность: ваши данные всегда под защитой.
 🌍 Глобальность: расширяем сеть серверов постоянно .
@@ -466,10 +466,10 @@ async def buy_vpn(call):
                                          markup)
     else:
         markup = types.InlineKeyboardMarkup()
-        button1 = types.InlineKeyboardButton("- 1 месяц - 99₽", callback_data=f'1month1|{device}')
-        button2 = types.InlineKeyboardButton("- 3 месяца - 255₽ (-15%)", callback_data=f'3month1|{device}')
-        button3 = types.InlineKeyboardButton("- 6 месяцев - 480₽ (-20%)", callback_data=f'6month1|{device}')
-        button4 = types.InlineKeyboardButton("- 12 месяцев - 999₽ (-25%)", callback_data=f'12month1|{device}')
+        button1 = types.InlineKeyboardButton("- 1 месяц - 199₽", callback_data=f'1month1|{device}')
+        button2 = types.InlineKeyboardButton("- 3 месяца - 510₽ (-15%)", callback_data=f'3month1|{device}')
+        button3 = types.InlineKeyboardButton("- 6 месяцев - 960₽ (-20%)", callback_data=f'6month1|{device}')
+        button4 = types.InlineKeyboardButton("- 12 месяцев - 1799₽ (-25%)", callback_data=f'12month1|{device}')
         button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
         markup.add(button1)
         markup.add(button2)
@@ -495,19 +495,19 @@ async def choose_subscription_duration_mounth(call):
     sub = ""
     if subscription_duration == "1month1":
         cur_time = 31
-        amount = 99
+        amount = 199
         sub = "1 месяц"
     elif subscription_duration == "3month1":
         cur_time = 91
-        amount = 255
+        amount = 510
         sub = "3 месяца"
     elif subscription_duration == "6month1":
         cur_time = 181
-        amount = 480
+        amount = 960
         sub = "6 месяцев"
     elif subscription_duration == "12month1":
         cur_time = 361
-        amount = 899
+        amount = 1799
         sub = "12 месяцев"
     user_status_device = await get_device_payment_status(user_id, device)
     markup1 = types.InlineKeyboardMarkup()
@@ -651,7 +651,7 @@ async def change_link(call):
 async def back_to_main_menu(call):
     user_name = call.from_user.first_name
     welcome_message = (
-        f"""{user_name}, 🚀 Добро пожаловать в HugVPN – ваш надёжный и быстрый VPN!
+        f"""{user_name}, 🚀 Добро пожаловать в GUPVPN – ваш надёжный и быстрый VPN!
 
 🔒 Полная анонимность и защита данных
 ⚡ Максимальная скорость без ограничений
@@ -757,10 +757,10 @@ async def phone_to_proceed(call):
     user_status_device = await get_device_payment_status(user_id, device)
     if user_status_device is True:
         markup = types.InlineKeyboardMarkup()
-        button1 = types.InlineKeyboardButton("- 1 месяц - 99₽", callback_data=f'1month2|{device}')
-        button2 = types.InlineKeyboardButton("- 3 месяца - 255₽ (-15%)", callback_data=f'3month2|{device}')
-        button3 = types.InlineKeyboardButton("- 6 месяцев - 480₽ (-20%)", callback_data=f'6month2|{device}')
-        button4 = types.InlineKeyboardButton("- 12 месяцев - 899₽ (-25%)", callback_data=f'12month2|{device}')
+        button1 = types.InlineKeyboardButton("- 1 месяц - 199₽", callback_data=f'1month2|{device}')
+        button2 = types.InlineKeyboardButton("- 3 месяца - 510₽ (-15%)", callback_data=f'3month2|{device}')
+        button3 = types.InlineKeyboardButton("- 6 месяцев - 960₽ (-20%)", callback_data=f'6month2|{device}')
+        button4 = types.InlineKeyboardButton("- 12 месяцев - 1799₽ (-25%)", callback_data=f'12month2|{device}')
         button5 = types.InlineKeyboardButton("🏠Главное меню", callback_data='main_menu')
         markup.add(button1)
         markup.add(button2)
@@ -821,19 +821,19 @@ async def pay_to_proceed(call):
     sub = ""
     if subscription_duration == "1month2":
         cur_time = 31
-        amount = 99
+        amount = 199
         sub = "1 месяц"
     elif subscription_duration == "3month2":
         cur_time = 91
-        amount = 255
+        amount = 510
         sub = "3 месяца"
     elif subscription_duration == "6month2":
         cur_time = 181
-        amount = 480
+        amount = 960
         sub = "6 месяцев"
     elif subscription_duration == "12month2":
         cur_time = 361
-        amount = 899
+        amount = 1799
         sub = "12 месяцев"
     user_status_device = await get_device_payment_status(user_id, device)
     markup1 = types.InlineKeyboardMarkup()
