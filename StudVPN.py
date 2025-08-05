@@ -61,7 +61,7 @@ top_10_cache = []
 
 async def get_vless_link(user_id, device_type):
     user_uuid_from_device = await get_device_uuid(user_id, device_type)
-    vless_link = f"vless://{user_uuid_from_device}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=6zedx9tc-YP4Lyh8xFp6LtEvvmCB9iAtoNNc3tt5Ons&sni=whatsapp.com&sid=916e9946&spx=%2F&email={user_id}#GupVPN"
+    vless_link = f"vless://{user_uuid_from_device}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=zsCnUIuaFGkt1-r81UTsdrzZPnQ6kunnd1K0pFHhuTg&sni=whatsapp.com&sid=23b21c3f&spx=%2F&email={user_id}#GupVPN"
     # Обновление конфигурации на сервере
     return vless_link
 
@@ -81,7 +81,7 @@ async def send_message_with_deletion(chat_id, text, reply_markup=None):
 
 async def generate_vless_link_for_buy(user_id, message_chat_id, device_type):
     user_uuid = await get_device_uuid(user_id, device_type)
-    vless_link = f"vless://{user_uuid}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=6zedx9tc-YP4Lyh8xFp6LtEvvmCB9iAtoNNc3tt5Ons&sni=whatsapp.com&sid=916e9946&spx=%2F&email={user_id}#GupVPN"
+    vless_link = f"vless://{user_uuid}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=zsCnUIuaFGkt1-r81UTsdrzZPnQ6kunnd1K0pFHhuTg&sni=whatsapp.com&sid=23b21c3f&spx=%2F&email={user_id}#GupVPN"
 
     # Обновление конфигурации на сервере
     await update_config_on_server(user_uuid)
@@ -613,10 +613,6 @@ async def choose_subscription_duration_mounth(call):
 @bot.callback_query_handler(func=lambda call: call.data == "change_link")
 async def change_link(call):
     print(1)
-    target_user_id=call.from_user.id
-@bot.callback_query_handler(func=lambda call: call.data == "change_link")
-async def change_link(call):
-    print(1)
     target_user_id = call.from_user.id
     device = "iPhone"
     # user_id=call.from_user.id
@@ -624,7 +620,6 @@ async def change_link(call):
     button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button1)
     fl = 1
-    cur_status_device=await get_device_payment_status(target_user_id,device)
     cur_status_device = await get_device_payment_status(target_user_id, device)
     if cur_status_device is True:
         cur_device_uuid = await get_device_uuid(target_user_id, device)
