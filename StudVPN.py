@@ -20,17 +20,31 @@ import sqlite3
 import paramiko
 import logging
 import asyncio, asyncssh
+
 logging.getLogger('asyncssh').setLevel(logging.WARNING)
 from telebot import types
 from datetime import datetime, timedelta
-from database_utils import create_database,add_raffle_tickets,get_all_pay,update_all_pay,get_raffle_tickets,update_purchase_amount,update_renewal_amount,update_flag,get_purchase_amount,get_renewal_amount,get_flag, get_username,update_username,get_telegram_id_by_username,update_referral_in,get_referral_in_count,get_agree_status,update_agree_status, update_referrer_id,add_user, get_referrer_id, format_subscription_end_time,add_device,get_user_referral_count,get_device_subscription_end_time, delete_user, delete_device, get_device_payment_status,get_device_uuid,update_device_status, update_referral_count,get_user_data,get_all_users,check_user_exists
+from database_utils import create_database, add_raffle_tickets, get_all_pay, update_all_pay, get_raffle_tickets, \
+    update_purchase_amount, update_renewal_amount, update_flag, get_purchase_amount, get_renewal_amount, get_flag, \
+    get_username, update_username, get_telegram_id_by_username, update_referral_in, get_referral_in_count, \
+    get_agree_status, update_agree_status, update_referrer_id, add_user, get_referrer_id, format_subscription_end_time, \
+    add_device, get_user_referral_count, get_device_subscription_end_time, delete_user, delete_device, \
+    get_device_payment_status, get_device_uuid, update_device_status, update_referral_count, get_user_data, \
+    get_all_users, check_user_exists
 from update_schema import update_database_schema
-#logging.basicConfig(level=logging.DEBUG)
+
+# logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
 TELEGRAM_TOKEN = '8331624604:AAH1sBO4tvHGdGgSs7z6S6xpVGTQxnTPWM4'
+<<<<<<< HEAD
 ADMIN_IDS = [5510185795,851394287]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
+=======
+ADMIN_IDS = [5510185795, 851394287]
+# 8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
+# 7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
+>>>>>>> ee484a6 (dc)
 SERVER_IP = '213.165.37.141'
 DATABASE_FILE = "vpn5_keys.db"
 SERVER_PORT = 443  # Обычно 22 для SSH
@@ -42,22 +56,23 @@ UUID_KEYWORD = "id: "
 bot = AsyncTeleBot(TELEGRAM_TOKEN)
 
 logging.basicConfig(
-     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
 last_message_ids = {}
 user_payment_status = {}
-admin_sms={}
+admin_sms = {}
 top_10_cache = []
 
-async def get_vless_link(user_id,device_type):
-    user_uuid_from_device = await get_device_uuid(user_id,device_type)
+
+async def get_vless_link(user_id, device_type):
+    user_uuid_from_device = await get_device_uuid(user_id, device_type)
     vless_link = f"vless://{user_uuid_from_device}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=6zedx9tc-YP4Lyh8xFp6LtEvvmCB9iAtoNNc3tt5Ons&sni=whatsapp.com&sid=916e9946&spx=%2F&email={user_id}#HugVPN"
     # Обновление конфигурации на сервере
     return vless_link
 
 
-async def send_message_with_deletion(chat_id, text,reply_markup=None):
+async def send_message_with_deletion(chat_id, text, reply_markup=None):
     # Удаляем предыдущее сообщение, если оно существует
     if chat_id in last_message_ids:
         try:
@@ -65,16 +80,13 @@ async def send_message_with_deletion(chat_id, text,reply_markup=None):
         except Exception as e:
             print(f"Error deleting message: {e}")
     # Отправляем новое сообщение
-    new_message = await bot.send_message(chat_id, text,reply_markup=reply_markup)
+    new_message = await bot.send_message(chat_id, text, reply_markup=reply_markup)
     # Сохраняем идентификатор нового сообщения
     last_message_ids[chat_id] = new_message.message_id
 
 
-
-
-
-async def generate_vless_link_for_buy(user_id,message_chat_id,device_type):
-    user_uuid = await get_device_uuid(user_id,device_type)
+async def generate_vless_link_for_buy(user_id, message_chat_id, device_type):
+    user_uuid = await get_device_uuid(user_id, device_type)
     vless_link = f"vless://{user_uuid}@{SERVER_IP}:443?type=tcp&security=reality&fp=chrome&pbk=6zedx9tc-YP4Lyh8xFp6LtEvvmCB9iAtoNNc3tt5Ons&sni=whatsapp.com&sid=916e9946&spx=%2F&email={user_id}#HugVPN"
 
     # Обновление конфигурации на сервере
@@ -84,16 +96,12 @@ async def generate_vless_link_for_buy(user_id,message_chat_id,device_type):
 
 async def restart_xray(ssh):
     try:
-        result = await ssh.run('systemctl restart xray',check=True)
+        result = await ssh.run('systemctl restart xray', check=True)
     except Exception as e:
         print(f"Ошибка при перезапуске Xray: {e}")
 
 
-
-
-
-
-async def remove_uuid_from_config( uuid_to_remove):
+async def remove_uuid_from_config(uuid_to_remove):
     """Удаляет строку с указанным UUID из файла конфигурации."""
     try:
         # SSH подключение к серверу
@@ -132,7 +140,8 @@ async def remove_uuid_from_config( uuid_to_remove):
         print(f"Error writing config file: {e}")
         return False
 
-#Добавление нового Uuid в конфиг
+
+# Добавление нового Uuid в конфиг
 async def update_config_on_server(new_uuid):
     try:
         # SSH подключение к серверу
@@ -163,15 +172,14 @@ async def update_config_on_server(new_uuid):
         print(f"Ошибка при обновлении конфигурации: {e}")
 
 
-
 async def dop_free_days_for_one(user_id, col_days):
-    device_comb=["iPhone"]
+    device_comb = ["iPhone"]
     for device in device_comb:
         cur_time_end = await get_device_subscription_end_time(user_id, device)
         if cur_time_end != 0 and cur_time_end is not None:
             cur_time_end_new_format = datetime.fromisoformat(cur_time_end)
             cur_time_end_new_format = cur_time_end_new_format + timedelta(days=col_days)
-            cur_status=await get_device_payment_status(user_id, device)
+            cur_status = await get_device_payment_status(user_id, device)
             device_uuid = await get_device_uuid(user_id, device)
             await update_device_status(device_uuid, True, cur_time_end_new_format)
             if not cur_status:
@@ -185,17 +193,16 @@ async def dop_free_days_for_one(user_id, col_days):
                 await update_config_on_server(device_uuid)
 
 
-
 async def dop_free_days(user_id, col_days):
     referrer_id = await get_referrer_id(user_id)
     print(referrer_id)
-    device_comb=["iPhone"]
+    device_comb = ["iPhone"]
     for device in device_comb:
         cur_time_end = await get_device_subscription_end_time(user_id, device)
         if cur_time_end != "None" and cur_time_end is not None:
             cur_time_end_new_format = datetime.fromisoformat(cur_time_end)
             cur_time_end_new_format = cur_time_end_new_format + timedelta(days=col_days)
-            cur_status=await get_device_payment_status(user_id, device)
+            cur_status = await get_device_payment_status(user_id, device)
             device_uuid = await get_device_uuid(user_id, device)
             await update_device_status(device_uuid, True, cur_time_end_new_format)
             if not cur_status:
@@ -229,22 +236,19 @@ async def dop_free_days(user_id, col_days):
                         await update_config_on_server(device_uuid)
 
 
-
-
-
-#Написать слова за регистраци
+# Написать слова за регистраци
 async def user_has_registered_in_bot(user_id):
     chat_id_from_recipient = user_id
-    await bot.send_message(chat_id_from_recipient, "🎁Вам добавлено бесплатно 14 суток пользования нашим ВПН на все устройства, за регистрацию в боте🎁")
+    await bot.send_message(chat_id_from_recipient,
+                           "🎁Вам добавлено бесплатно 14 суток пользования нашим ВПН на все устройства, за регистрацию в боте🎁")
 
 
-
-#Обрабатываем старт
+# Обрабатываем старт
 @bot.message_handler(commands=['start'])
 async def start(message):
     user_name = message.from_user.first_name
     welcome_message = (
-        f"""{user_name}, 🚀 Добро пожаловать в HugVPN – ваш надёжный и быстрый VPN!
+        f"""{user_name}, 🚀 Добро пожаловать в GUP VPN – ваш надёжный и быстрый VPN!
 
 🔒 Полная анонимность и защита данных
 ⚡ Максимальная скорость без ограничений
@@ -254,11 +258,11 @@ async def start(message):
 
 🎁 Хочешь бесплатный VPN?
 Присоединяйся к нашей реферальной программе и получай бесплатные недели использования!
-        
+
 🟢 Ваш профиль активен"""
     )
     user_id = message.from_user.id  # Получаем user_id
-    user_name_id=message.from_user.username
+    user_name_id = message.from_user.username
     referrer = None
     if " " in message.text:
         referrer_candidate = message.text.split()[1]
@@ -270,15 +274,15 @@ async def start(message):
             pass
     if not await check_user_exists(user_id):
         if str(referrer)[0] == '#': referrer = None
-        await add_user(user_id, user_name_id, 0,0,True,referrer,0,0,0,0)
+        await add_user(user_id, user_name_id, 0, 0, True, referrer, 0, 0, 0, 0)
         print(1)
-        await add_device(user_id, 1,"iPhone",False,None)
-        #await add_device(user_id, 2, "Mac", False, None)
-        #await add_device(user_id, 3, "Android", False, None)
-        #await add_device(user_id, 4, "Windows", False, None)
+        await add_device(user_id, 1, "iPhone", False, None)
+        # await add_device(user_id, 2, "Mac", False, None)
+        # await add_device(user_id, 3, "Android", False, None)
+        # await add_device(user_id, 4, "Windows", False, None)
         if referrer is not None:
             cur_col_in = await get_referral_in_count(referrer)
-            await update_referral_in(referrer,cur_col_in+1)
+            await update_referral_in(referrer, cur_col_in + 1)
             await dop_free_days_for_one(user_id, 21)
             await dop_free_days_for_one(referrer, 5)
         else:
@@ -287,7 +291,7 @@ async def start(message):
     # Создаем inline-клавиатуру
     cur_user_name = await get_username(user_id)
     if cur_user_name != user_name_id:
-        await update_username(user_id,user_name_id)
+        await update_username(user_id, user_name_id)
 
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
@@ -321,7 +325,7 @@ async def check_channel_subscription(user_id):
         return False
 
 
-#Розыгрыш
+# Розыгрыш
 @bot.callback_query_handler(func=lambda call: call.data == "join_raffle1")
 async def join_raffle(call):
     user_id = call.from_user.id
@@ -340,16 +344,13 @@ async def join_raffle(call):
 Победитель будет выбираться рандомно из базы людей, которые продлили или купили подписку в период с 30 марта - 30 апреля
 
 📊 Ваше кол-во мест в таблице будет равняться суммарному количеству месяцев, на которое вы продлили или купили подписку + 1 билет за подписку
-Вы можете купить два раза по 6 месяц и у вас будет 12 мест в таблице, что сильно повышает шансы выиграть""", reply_markup=markup)
-
-
+Вы можете купить два раза по 6 месяц и у вас будет 12 мест в таблице, что сильно повышает шансы выиграть""",
+                           reply_markup=markup)
 
     # Проверяем подписку на канал
 
 
-
-
-#Розыгрыш
+# Розыгрыш
 @bot.callback_query_handler(func=lambda call: call.data == "join_raffle")
 async def join_raffle(call):
     user_id = call.from_user.id
@@ -374,7 +375,8 @@ async def join_raffle(call):
     if current_tickets == 1:
         await send_message_with_deletion(
             call.message.chat.id,
-            "❌ У вас сейчас 1 билет, за подписку на канал. Можно увеличить шансы, купив или продлив подписку",reply_markup=markup
+            "❌ У вас сейчас 1 билет, за подписку на канал. Можно увеличить шансы, купив или продлив подписку",
+            reply_markup=markup
         )
         return
     markup1 = types.InlineKeyboardMarkup()
@@ -382,13 +384,11 @@ async def join_raffle(call):
     markup1.add(button2)
     await send_message_with_deletion(
         call.message.chat.id,
-        f"✅ Вы участвуете в розыгрыше! Сейчас у вас {current_tickets} билет(ов). Итоги 30 апреля",reply_markup=markup1
+        f"✅ Вы участвуете в розыгрыше! Сейчас у вас {current_tickets} билет(ов). Итоги 30 апреля", reply_markup=markup1
     )
 
 
-
-
-#Выдает информацию о нас
+# Выдает информацию о нас
 @bot.callback_query_handler(func=lambda call: call.data == "service")
 async def buy_vpn(call):
     markup = types.InlineKeyboardMarkup()
@@ -404,8 +404,8 @@ async def buy_vpn(call):
 - Защищать свои данные от посторонних глаз с помощью современных технологий шифрования.
 - Экономить время — настройка занимает всего пару кликов, а после первого подключения нужно будет просто нажимать 1 кнопку!
 
-Почему выбирают HugVPN?
-💰 Один из самых дешевых тарифов (2.5 рубля/день)
+Почему выбирают GUP VPN?
+💰 Один из самых дешевых тарифов (5 рубля/день)
 🚀 Высокая скорость: никаких тормозов, только комфортный серфинг.
 🔒 Безопасность: ваши данные всегда под защитой.
 🌍 Глобальность: расширяем сеть серверов постоянно .
@@ -414,11 +414,10 @@ async def buy_vpn(call):
 Наша миссия — сделать интернет безопасным и быстрым для каждого. Попробуйте HugVPN прямо сейчас и ощутите разницу! 😊
 """
     )
-    await send_message_with_deletion(call.message.chat.id,welcome_message,reply_markup=markup)
+    await send_message_with_deletion(call.message.chat.id, welcome_message, reply_markup=markup)
 
 
-
-#Кнопка инструкций надо настроить
+# Кнопка инструкций надо настроить
 @bot.callback_query_handler(func=lambda call: call.data == "instruction")
 async def buy_vpn(call):
     markup = types.InlineKeyboardMarkup()
@@ -427,12 +426,12 @@ async def buy_vpn(call):
     button3 = types.InlineKeyboardButton("💻 Mac", url='https://t.me/HugVPN/43')
     button4 = types.InlineKeyboardButton("🖥️ Windows", url='https://t.me/HugVPN/45')
     button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
-    markup.add(button1,button2)
-    markup.add(button3,button4)
+    markup.add(button1, button2)
+    markup.add(button3, button4)
     markup.add(button5)
-    await send_message_with_deletion(call.message.chat.id,"Выберите устройство, для которого хотите получить инструкцию:",reply_markup=markup)
-
-
+    await send_message_with_deletion(call.message.chat.id,
+                                     "Выберите устройство, для которого хотите получить инструкцию:",
+                                     reply_markup=markup)
 
 
 # Обработчик кнопки "Купить VPN"
@@ -450,8 +449,7 @@ async def buy_vpn(call):
 #     await send_message_with_deletion(call.message.chat.id,"Выберите устройство, для которого хотите купить ВПН:", markup)
 
 
-
-#Купить впн
+# Купить впн
 @bot.callback_query_handler(func=lambda call: call.data == "buy_vpn")
 async def buy_vpn(call):
     device = "iPhone"
@@ -466,13 +464,15 @@ async def buy_vpn(call):
         button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
         markup.add(button1)
         markup.add(button2)
-        await send_message_with_deletion(call.message.chat.id, f"У вас уже есть подписка 🟢\nМожете посмотреть ключ во вкладе Мой VPN\n\nВремя окончания вашей подписки: {user_endtime_device_str}\n\nХотите ее продлить?",markup)
+        await send_message_with_deletion(call.message.chat.id,
+                                         f"У вас уже есть подписка 🟢\nМожете посмотреть ключ во вкладе Мой VPN\n\nВремя окончания вашей подписки: {user_endtime_device_str}\n\nХотите ее продлить?",
+                                         markup)
     else:
         markup = types.InlineKeyboardMarkup()
-        button1 = types.InlineKeyboardButton("- 1 месяц - 99₽", callback_data=f'1month1|{device}')
-        button2 = types.InlineKeyboardButton("- 3 месяца - 255₽ (-15%)", callback_data=f'3month1|{device}')
-        button3 = types.InlineKeyboardButton("- 6 месяцев - 480₽ (-20%)", callback_data=f'6month1|{device}')
-        button4 = types.InlineKeyboardButton("- 12 месяцев - 999₽ (-25%)", callback_data=f'12month1|{device}')
+        button1 = types.InlineKeyboardButton("- 1 месяц - 199₽", callback_data=f'1month1|{device}')
+        button2 = types.InlineKeyboardButton("- 3 месяца - 510₽ (-15%)", callback_data=f'3month1|{device}')
+        button3 = types.InlineKeyboardButton("- 6 месяцев - 960₽ (-20%)", callback_data=f'6month1|{device}')
+        button4 = types.InlineKeyboardButton("- 12 месяцев - 1799₽ (-25%)", callback_data=f'12month1|{device}')
         button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
         markup.add(button1)
         markup.add(button2)
@@ -480,12 +480,13 @@ async def buy_vpn(call):
         markup.add(button4)
         markup.add(button5)
 
-        await send_message_with_deletion(call.message.chat.id,f"📆Выберите срок подписки:", markup)
+        await send_message_with_deletion(call.message.chat.id, f"📆Выберите срок подписки:", markup)
 
 
-
-#Оплата покупки подписки
-@bot.callback_query_handler(func=lambda call: call.data.startswith("1month1") or call.data.startswith("3month1") or call.data.startswith("6month1") or call.data.startswith("12month1"))
+# Оплата покупки подписки
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("1month1") or call.data.startswith("3month1") or call.data.startswith(
+        "6month1") or call.data.startswith("12month1"))
 async def choose_subscription_duration_mounth(call):
     data = call.data.split("|")
     subscription_duration = data[0]
@@ -497,19 +498,19 @@ async def choose_subscription_duration_mounth(call):
     sub = ""
     if subscription_duration == "1month1":
         cur_time = 31
-        amount = 99
+        amount = 199
         sub = "1 месяц"
     elif subscription_duration == "3month1":
         cur_time = 91
-        amount = 255
+        amount = 510
         sub = "3 месяца"
     elif subscription_duration == "6month1":
         cur_time = 181
-        amount = 480
+        amount = 960
         sub = "6 месяцев"
     elif subscription_duration == "12month1":
         cur_time = 361
-        amount = 899
+        amount = 1799
         sub = "12 месяцев"
     user_status_device = await get_device_payment_status(user_id, device)
     markup1 = types.InlineKeyboardMarkup()
@@ -527,7 +528,8 @@ async def choose_subscription_duration_mounth(call):
         # 📤 Создание платежа через ЮKassa
         payment_link, payment_id = await create_payment(amount, description)
         if payment_link:
-            await send_message_with_deletion(call.message.chat.id, f"👇 Перейдите по ссылке для оплаты:\n{payment_link}",reply_markup=markup1)
+            await send_message_with_deletion(call.message.chat.id, f"👇 Перейдите по ссылке для оплаты:\n{payment_link}",
+                                             reply_markup=markup1)
             attempts = 0
             max_attempts = 120  # Проверяем в течение 10 минут
             while attempts < max_attempts:
@@ -537,16 +539,18 @@ async def choose_subscription_duration_mounth(call):
                 if status == 'succeeded':
                     cur_time_end = datetime.now() + timedelta(days=cur_time)
                     device_uuid = await get_device_uuid(user_id, device)
-                    await dop_free_days_for_one(user_id,1)
+                    await dop_free_days_for_one(user_id, 1)
                     await update_device_status(device_uuid, True, cur_time_end)
                     vless_link = await get_vless_link(user_id, device)
-                    await bot.send_message(call.message.chat.id,text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```",parse_mode='MarkdownV2')
-                    await bot.send_message(5510185795,text=f"✅ Купил {user_name} на {amount}")
+                    await bot.send_message(call.message.chat.id,
+                                           text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```",
+                                           parse_mode='MarkdownV2')
+                    await bot.send_message(5510185795, text=f"✅ Купил {user_name} на {amount}")
                     col = col + 1
-                    if col%3 == 1:
+                    if col % 3 == 1:
                         await bot.send_message(1120515812, text=f"Мурад СОСИ ЧЛЕН \n ✅ Купил {user_name} на {amount}")
-                    #Розыгрыш
-                    await add_raffle_tickets(user_id, cur_time//30)
+                    # Розыгрыш
+                    await add_raffle_tickets(user_id, cur_time // 30)
                     user_endtime_device = await get_device_subscription_end_time(user_id, device)
                     user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
                     cur_refer = await get_referrer_id(user_id)
@@ -562,7 +566,7 @@ async def choose_subscription_duration_mounth(call):
                         if cur_fl == 0:
                             cur_sum = await get_purchase_amount(cur_refer)
                             cur_sum = cur_sum + amount
-                            await update_purchase_amount(cur_refer,cur_sum)
+                            await update_purchase_amount(cur_refer, cur_sum)
                         else:
                             cur_sum = await get_renewal_amount(cur_refer)
                             cur_sum = cur_sum + amount
@@ -585,14 +589,17 @@ async def choose_subscription_duration_mounth(call):
                     attempts += 1
 
             if attempts == max_attempts:
-                await send_message_with_deletion(call.message.chat.id,text="❌Истекло время ожидания оплаты. Попробуйте снова.",reply_markup=markup)
+                await send_message_with_deletion(call.message.chat.id,
+                                                 text="❌Истекло время ожидания оплаты. Попробуйте снова.",
+                                                 reply_markup=markup)
         else:
-            await send_message_with_deletion(call.message.chat.id, text="❌Произошла ошибка при создании платежа. Попробуйте позже.",reply_markup=markup)
+            await send_message_with_deletion(call.message.chat.id,
+                                             text="❌Произошла ошибка при создании платежа. Попробуйте позже.",
+                                             reply_markup=markup)
 
 
-
-#Помеять ссылку
-#bot.callback_query_handler(func=lambda call: call.data == "change_link")
+# Помеять ссылку
+# bot.callback_query_handler(func=lambda call: call.data == "change_link")
 # async def change_link_vpn(user_id,my_yser_id):
 #     markup = types.InlineKeyboardMarkup()
 #     button1 = types.InlineKeyboardButton("📱 iPhone", callback_data=f'iPhone_change|iPhone|{user_id}')
@@ -608,42 +615,60 @@ async def choose_subscription_duration_mounth(call):
 #     await send_message_with_deletion(my_yser_id, "👇 Выберите устройство, для которого хотите поменять свой ключ:", markup)
 
 
+<<<<<<< HEAD
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "change_link")
 async def change_link(call):
     print(1)
     target_user_id=call.from_user.id
+=======
+@bot.callback_query_handler(func=lambda call: call.data == "change_link")
+async def change_link(call):
+    print(1)
+    target_user_id = call.from_user.id
+>>>>>>> ee484a6 (dc)
     device = "iPhone"
-    #user_id=call.from_user.id
+    # user_id=call.from_user.id
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button1)
     fl = 1
+<<<<<<< HEAD
     cur_status_device=await get_device_payment_status(target_user_id,device)
+=======
+    cur_status_device = await get_device_payment_status(target_user_id, device)
+>>>>>>> ee484a6 (dc)
     if cur_status_device is True:
         cur_device_uuid = await get_device_uuid(target_user_id, device)
         await remove_uuid_from_config(cur_device_uuid)
         cur_device_time = await get_device_subscription_end_time(target_user_id, device)
         await delete_device(cur_device_uuid)
-        await add_device(target_user_id,fl,device,cur_status_device,cur_device_time)
-        new_uuid = await get_device_uuid(target_user_id,device)
+        await add_device(target_user_id, fl, device, cur_status_device, cur_device_time)
+        new_uuid = await get_device_uuid(target_user_id, device)
         await update_config_on_server(new_uuid)
-        new_link = await get_vless_link(target_user_id,device)
+        new_link = await get_vless_link(target_user_id, device)
         user_endtime_device = await get_device_subscription_end_time(target_user_id, device)
         user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
+<<<<<<< HEAD
         await bot.send_message(target_user_id,f"```{new_link}```",parse_mode='MarkdownV2')
     else:
         print(1)
         await send_message_with_deletion(target_user_id,f"У вас нет активного ключа, купите его",reply_markup=markup)
+=======
+        await bot.send_message(target_user_id, f"```{new_link}```", parse_mode='MarkdownV2')
+    else:
+        print(1)
+        await send_message_with_deletion(target_user_id, f"У вас нет активного ключа, купите его", reply_markup=markup)
+>>>>>>> ee484a6 (dc)
 
 
-#Обработчик команды "Назад"
+# Обработчик команды "Назад"
 @bot.callback_query_handler(func=lambda call: call.data == "main_menu")
 async def back_to_main_menu(call):
     user_name = call.from_user.first_name
     welcome_message = (
-        f"""{user_name}, 🚀 Добро пожаловать в HugVPN – ваш надёжный и быстрый VPN!
+        f"""{user_name}, 🚀 Добро пожаловать в GUP VPN – ваш надёжный и быстрый VPN!
 
 🔒 Полная анонимность и защита данных
 ⚡ Максимальная скорость без ограничений
@@ -654,7 +679,7 @@ async def back_to_main_menu(call):
 🎁 Хочешь бесплатный VPN?
 Присоединяйся к нашей реферальной программе и получай бесплатные недели использования!
 
-        
+
 🟢 Ваш профиль активен"""
 
     )
@@ -670,9 +695,14 @@ async def back_to_main_menu(call):
     markup.add(button3, button5)
     markup.add(button4, button6)
     markup.add(button7)
+<<<<<<< HEAD
     await send_message_with_deletion(call.message.chat.id,welcome_message, markup)
+=======
+    await send_message_with_deletion(call.message.chat.id, welcome_message, markup)
+>>>>>>> ee484a6 (dc)
 
-#Узнать свой ВПН
+
+# Узнать свой ВПН
 # @bot.callback_query_handler(func=lambda call: call.data == "my_vpn")
 # async def my_vpn(call):
 #     user_id = call.from_user.id
@@ -689,26 +719,29 @@ async def back_to_main_menu(call):
 #     markup.add(button5)
 #     await send_message_with_deletion(call.message.chat.id,"👇 Выберите устройство, для которого хотите узнать свой ключ:", markup)
 
-#Выбор устройства для которого нужно узнать есть ключ или нет
+# Выбор устройства для которого нужно узнать есть ключ или нет
 @bot.callback_query_handler(func=lambda call: call.data == "my_vpn")
 async def my_vpn(call):
-    #data = call.data.split("|")
-    #up = data[0]
+    # data = call.data.split("|")
+    # up = data[0]
     device = "iPhone"
-    user_id=call.from_user.id
+    user_id = call.from_user.id
     user_payment_status_device = await get_device_payment_status(user_id, device)
     if user_payment_status_device is True:
-        user_end_time=await get_device_subscription_end_time(user_id, device)
+        user_end_time = await get_device_subscription_end_time(user_id, device)
         user_endtime_device = await format_subscription_end_time(str(user_end_time))
         current_link = await get_vless_link(user_id, device)
-        await bot.send_message(call.message.chat.id, text=f"👉 Ваша VLESS ссылка: ```{current_link}```", parse_mode='MarkdownV2')
+        await bot.send_message(call.message.chat.id, text=f"👉 Ваша VLESS ссылка: ```{current_link}```",
+                               parse_mode='MarkdownV2')
         markup = types.InlineKeyboardMarkup()
         button1 = types.InlineKeyboardButton("⏳ Продлить подписку", callback_data='proceed_subscription')
         button3 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
         button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
-        markup.add(button1,button3)
+        markup.add(button1, button3)
         markup.add(button2)
-        await send_message_with_deletion(call.message.chat.id, f"""⏳ Время окончания вашей подписки: {user_endtime_device}\nВыберите действие: """, markup)
+        await send_message_with_deletion(call.message.chat.id,
+                                         f"""⏳ Время окончания вашей подписки: {user_endtime_device}\nВыберите действие: """,
+                                         markup)
     else:
         markup = types.InlineKeyboardMarkup()
         button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
@@ -718,9 +751,7 @@ async def my_vpn(call):
         await send_message_with_deletion(call.message.chat.id, f"🚨 У вас нет ключа\nВыберите действие:", markup)
 
 
-
-
-#Выбор утройства для продления
+# Выбор утройства для продления
 # @bot.callback_query_handler(func=lambda call: call.data == "proceed_subscription")
 # async def phone_to_proceed(call):
 #         markup = types.InlineKeyboardMarkup()
@@ -739,17 +770,17 @@ async def my_vpn(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == "proceed_subscription")
 async def phone_to_proceed(call):
-    #data = call.data.split("|")
-    #up = data[0]
+    # data = call.data.split("|")
+    # up = data[0]
     device = "iPhone"
     user_id = call.from_user.id
     user_status_device = await get_device_payment_status(user_id, device)
     if user_status_device is True:
         markup = types.InlineKeyboardMarkup()
-        button1 = types.InlineKeyboardButton("- 1 месяц - 99₽", callback_data=f'1month2|{device}')
-        button2 = types.InlineKeyboardButton("- 3 месяца - 255₽ (-15%)", callback_data=f'3month2|{device}')
-        button3 = types.InlineKeyboardButton("- 6 месяцев - 480₽ (-20%)", callback_data=f'6month2|{device}')
-        button4 = types.InlineKeyboardButton("- 12 месяцев - 899₽ (-25%)", callback_data=f'12month2|{device}')
+        button1 = types.InlineKeyboardButton("- 1 месяц - 199₽", callback_data=f'1month2|{device}')
+        button2 = types.InlineKeyboardButton("- 3 месяца - 510₽ (-15%)", callback_data=f'3month2|{device}')
+        button3 = types.InlineKeyboardButton("- 6 месяцев - 960₽ (-20%)", callback_data=f'6month2|{device}')
+        button4 = types.InlineKeyboardButton("- 12 месяцев - 1799₽ (-25%)", callback_data=f'12month2|{device}')
         button5 = types.InlineKeyboardButton("🏠Главное меню", callback_data='main_menu')
         markup.add(button1)
         markup.add(button2)
@@ -757,7 +788,7 @@ async def phone_to_proceed(call):
         markup.add(button4)
         markup.add(button5)
 
-        await send_message_with_deletion(call.message.chat.id,f"📆Выберите срок, на который хотите продлить :", markup)
+        await send_message_with_deletion(call.message.chat.id, f"📆Выберите срок, на который хотите продлить :", markup)
     else:
         await send_message_with_deletion(call.message.chat.id, f"🚨 У вас нет ключа")
         markup = types.InlineKeyboardMarkup()
@@ -767,10 +798,11 @@ async def phone_to_proceed(call):
         markup.add(button2)
         await send_message_with_deletion(call.message.chat.id, "👇 Выберите действие:", markup)
 
-#Отмена платежа
+
+# Отмена платежа
 @bot.callback_query_handler(func=lambda call: call.data == "cancel_pay")
 async def cancel_pay(call):
-    user_id=call.from_user.id
+    user_id = call.from_user.id
     user_name = call.from_user.first_name
     welcome_message = (
         f"{user_name}, твой платеж отменен ❌"
@@ -787,17 +819,18 @@ async def cancel_pay(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    #button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
+    # button7 = types.InlineKeyboardButton("🌍 Купить карту", url='https://t.me/TopCardWorld_bot')
     markup.add(button1, button2)
     markup.add(button3, button5)
     markup.add(button4, button6)
-    #markup.add(button5)
+    # markup.add(button5)
     await send_message_with_deletion(call.message.chat.id, welcome_message, markup)
 
 
-
-#Продление подписки
-@bot.callback_query_handler(func=lambda call: call.data.startswith("1month2") or call.data.startswith("3month2") or call.data.startswith("6month2") or call.data.startswith("12month2"))
+# Продление подписки
+@bot.callback_query_handler(
+    func=lambda call: call.data.startswith("1month2") or call.data.startswith("3month2") or call.data.startswith(
+        "6month2") or call.data.startswith("12month2"))
 async def pay_to_proceed(call):
     data = call.data.split("|")
     subscription_duration = data[0]
@@ -808,19 +841,19 @@ async def pay_to_proceed(call):
     sub = ""
     if subscription_duration == "1month2":
         cur_time = 31
-        amount = 99
+        amount = 199
         sub = "1 месяц"
     elif subscription_duration == "3month2":
         cur_time = 91
-        amount = 255
+        amount = 510
         sub = "3 месяца"
     elif subscription_duration == "6month2":
         cur_time = 181
-        amount = 480
+        amount = 960
         sub = "6 месяцев"
     elif subscription_duration == "12month2":
         cur_time = 361
-        amount = 899
+        amount = 1799
         sub = "12 месяцев"
     user_status_device = await get_device_payment_status(user_id, device)
     markup1 = types.InlineKeyboardMarkup()
@@ -838,7 +871,8 @@ async def pay_to_proceed(call):
         # 📤 Создание платежа через ЮKassa
         payment_link, payment_id = await create_payment(amount, description)
         if payment_link:
-            await send_message_with_deletion(call.message.chat.id, f"👇 Перейдите по ссылке для оплаты:\n{payment_link}",reply_markup=markup1)
+            await send_message_with_deletion(call.message.chat.id, f"👇 Перейдите по ссылке для оплаты:\n{payment_link}",
+                                             reply_markup=markup1)
             attempts = 0
             max_attempts = 120  # Проверяем в течение 10 минут
             while attempts < max_attempts:
@@ -852,7 +886,9 @@ async def pay_to_proceed(call):
                     device_uuid = await get_device_uuid(user_id, device)
                     await update_device_status(device_uuid, True, cur_time_end)
                     vless_link = await get_vless_link(user_id, device)
-                    await bot.send_message(call.message.chat.id, text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```", parse_mode='MarkdownV2')
+                    await bot.send_message(call.message.chat.id,
+                                           text=f"✅ Оплата прошла успешно\n\n🔑 Ваша VLESS ссылка: ```{vless_link}```",
+                                           parse_mode='MarkdownV2')
                     await bot.send_message(5510185795, text=f"✅ Продлил {user_name} на {amount}")
                     col = col + 1
                     if col % 3 == 1:
@@ -866,13 +902,13 @@ async def pay_to_proceed(call):
                             await dop_free_days_for_one(cur_refer, 10)
                         cur_col_ref_buy = await get_user_referral_count(cur_refer)
                         cur_col_ref_buy = cur_col_ref_buy + 1
-                        await update_referral_count(cur_refer,cur_col_ref_buy)
+                        await update_referral_count(cur_refer, cur_col_ref_buy)
                     if cur_refer is not None and cur_refer != 0:
                         cur_fl = await get_flag(user_id)
                         if cur_fl == 0:
                             cur_sum = await get_purchase_amount(cur_refer)
                             cur_sum = cur_sum + amount
-                            await update_purchase_amount(cur_refer,cur_sum)
+                            await update_purchase_amount(cur_refer, cur_sum)
                         else:
                             cur_sum = await get_renewal_amount(cur_refer)
                             cur_sum = cur_sum + amount
@@ -885,7 +921,9 @@ async def pay_to_proceed(call):
                     button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
                     markup1.add(button1)
                     markup1.add(button2)
-                    await send_message_with_deletion(call.message.chat.id,f"⏳ Время окончания вашей подписки: {user_endtime_device_str}",reply_markup=markup1)
+                    await send_message_with_deletion(call.message.chat.id,
+                                                     f"⏳ Время окончания вашей подписки: {user_endtime_device_str}",
+                                                     reply_markup=markup1)
                     break
                 elif status == 'canceled':
                     print(4)
@@ -897,27 +935,30 @@ async def pay_to_proceed(call):
 
             print(1)
             if attempts == max_attempts:
-                await send_message_with_deletion(call.message.chat.id, text="❌Истекло время ожидания оплаты. Попробуйте снова.",reply_markup=markup)
+                await send_message_with_deletion(call.message.chat.id,
+                                                 text="❌Истекло время ожидания оплаты. Попробуйте снова.",
+                                                 reply_markup=markup)
         else:
-            await send_message_with_deletion(call.message.chat.id, text="❌Произошла ошибка при создании платежа. Попробуйте позже.",reply_markup=markup)
+            await send_message_with_deletion(call.message.chat.id,
+                                             text="❌Произошла ошибка при создании платежа. Попробуйте позже.",
+                                             reply_markup=markup)
 
 
-
-#Реферальная ссылка
+# Реферальная ссылка
 @bot.callback_query_handler(func=lambda call: call.data == "referral")
 async def referral_program(call):
     user_name = call.from_user.id
     referral_link = f"https://t.me/HugVPN_bot?start={user_name}"
     markup = types.InlineKeyboardMarkup()
-    button1=types.InlineKeyboardButton("👉 Узнать свою статистику", callback_data='col_ref')
+    button1 = types.InlineKeyboardButton("👉 Узнать свою статистику", callback_data='col_ref')
     button2 = types.InlineKeyboardButton("🌟 Топ 10 амбасадоров", callback_data='top_ref')
     button3 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button1)
     markup.add(button2)
     markup.add(button3)
-    await send_message_with_deletion(call.message.chat.id, f"🤙 Ваша реферальная ссылка: {referral_link}\n\n1️⃣ Если человек нажмет кнопку Start по вашей ссылке, вам и ему начислится по 5 дней бесплатно\n2️⃣ Если человек оформит любую подписку по вашей ссылке, вам начислится 10 дней дополнительно\n\nВсе дни складываются, поэтому можно раздать ссылки друзьям и получить год бесплатного пользования", markup)
-
-
+    await send_message_with_deletion(call.message.chat.id,
+                                     f"🤙 Ваша реферальная ссылка: {referral_link}\n\n1️⃣ Если человек нажмет кнопку Start по вашей ссылке, вам и ему начислится по 5 дней бесплатно\n2️⃣ Если человек оформит любую подписку по вашей ссылке, вам начислится 10 дней дополнительно\n\nВсе дни складываются, поэтому можно раздать ссылки друзьям и получить год бесплатного пользования",
+                                     markup)
 
 
 async def update_top_10_cache():
@@ -930,23 +971,21 @@ async def update_top_10_cache():
     #         f"{i}. {user['username']}: всего {user['total']} (рефералов: {user['referrals']}, стартов: {user['starts']})")
 
 
-
 async def get_current_top_10():
     """Возвращает текущий кэш топ-10"""
     return top_10_cache
 
 
-
-#Топ 10 рефералов
+# Топ 10 рефералов
 @bot.callback_query_handler(func=lambda call: call.data == "top_ref")
 async def print_top_ref(call):
-    user_id=call.from_user.id
+    user_id = call.from_user.id
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button1)
     top_10 = await get_current_top_10()
     if not top_10:
-        await send_message_with_deletion(user_id, "Пока нет лидеров",reply_markup=markup)
+        await send_message_with_deletion(user_id, "Пока нет лидеров", reply_markup=markup)
         return
 
     response = "🏆 Топ-10 активных пользователей:\n\n"
@@ -955,51 +994,46 @@ async def print_top_ref(call):
         response += f"{medal} {i}. @{user['username']}\n"
         response += f"   Всего: {user['total']} (💵 {user['referrals']} + 🤵 {user['starts']})\n"
 
-    await send_message_with_deletion(user_id,response,reply_markup=markup)
+    await send_message_with_deletion(user_id, response, reply_markup=markup)
 
 
-
-#Моя статистика
+# Моя статистика
 @bot.callback_query_handler(func=lambda call: call.data == "col_ref")
 async def referral_program(call):
     user_id = call.from_user.id
     user_col_ref = await get_user_referral_count(user_id)
-    user_col_in=await get_referral_in_count(user_id)
+    user_col_in = await get_referral_in_count(user_id)
     all_pay = await get_all_pay(user_id)
     sum_suf = await get_renewal_amount(user_id)
     print(user_col_in)
     markup = types.InlineKeyboardMarkup()
-    button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu',reply_markup=markup)
+    button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu', reply_markup=markup)
     markup.add(button2)
     await send_message_with_deletion(call.message.chat.id, f"""
     🙋‍♂️ Кол-во человек, которое зашло по вашей ссылке: {user_col_in}
-    
+
 ️🙋‍♀️ Кол-во раз, когда оплатили подписку по вашей реферальной ссылке: {user_col_ref}
 Сумма продлений по вашей реферальной ссылке: {sum_suf}
 Выплачено за продления: {all_pay}
-Баланс выплат: {max(0,sum_suf - all_pay)}
+Баланс выплат: {max(0, sum_suf - all_pay)}
 
 Вывод возможен от 300 рублей.
-Вам было начислено: {user_col_in*5+user_col_ref*10} дней, за вашу активность
+Вам было начислено: {user_col_in * 5 + user_col_ref * 10} дней, за вашу активность
 
 Статистика в разделе топ-10 обновляется каждые 20 минут, если вас сразу туда не записало, это нормально, нужно немного подождать)
-    """,markup)
-
-
-
-
+    """, markup)
 
 
 @bot.message_handler(commands=['help'])
 async def help_command(message):
-    user_id=message.from_user.id
+    user_id = message.from_user.id
     await send_message_with_deletion(message.chat.id, f"""
         👉 Посмотреть, как подключить выданный ключ, можно в инструкциях на главной странице.
 
 Таблица топов по рефералам обновляется каждые 20 минут. Если и после этого срока начисление не учтено, напишите нам.
 👨‍🔧 Если вопрос по другой теме, задайте его, и вам ответит первый освободившийся администратор 🔧
 
-@HugVPN_Support
+@GUPVPN_Support
     """)
 
 
@@ -1012,9 +1046,7 @@ https://telegra.ph/Usloviya-ispolzovaniya-i-Politika-konfidencialnosti-VPN-bota-
     """)
 
 
-
-
-#Панель админа
+# Панель админа
 @bot.message_handler(commands=['admin'])
 async def admin_menu(message):
     # Проверить, является ли пользователь администратором
@@ -1032,7 +1064,7 @@ async def admin_menu(message):
     btn11 = types.InlineKeyboardButton("📋 Получить тг айди по username", callback_data="get_tg_id")
     btn7 = types.InlineKeyboardButton("🧤 Поменять ссылку пользователю", callback_data="ask_to_change")
     btn8 = types.InlineKeyboardButton("👙 Поменять рефералов_старт кол-во ", callback_data="change_col_ref_start")
-    btn9 = types.InlineKeyboardButton("👙 Поменять рефералов_после кол-во",callback_data="change_col_ref_buy")
+    btn9 = types.InlineKeyboardButton("👙 Поменять рефералов_после кол-во", callback_data="change_col_ref_buy")
     btn5 = types.InlineKeyboardButton("📢 Массовая рассылка", callback_data="mass_message")
     btn4 = types.InlineKeyboardButton("📣 Узнать кол-во пользователей в базе данных", callback_data="col_user")
     markup.add(backup_button)
@@ -1049,9 +1081,6 @@ async def admin_menu(message):
     await send_message_with_deletion(message.chat.id, "🔧 Админ-панель", reply_markup=markup)
 
 
-
-
-
 async def setup_menu():
     commands = [
         types.BotCommand("start", "✅ Главное меню"),
@@ -1065,7 +1094,6 @@ async def setup_menu():
         logging.error(f"Ошибка при установке команд меню: {e}")
 
 
-
 @bot.callback_query_handler(func=lambda call: call.data == "col_user")
 async def get_user_info(call):
     conn = None
@@ -1077,7 +1105,8 @@ async def get_user_info(call):
         cursor.execute("SELECT telegram_id FROM user_referrals")
         telegram_ids = [row[0] for row in cursor.fetchall()]  # Extract Telegram IDs
         col = len(telegram_ids)
-        await send_message_with_deletion(call.message.chat.id, f"Сейчас в базе данных: {col} пользователей зарегистрировано")
+        await send_message_with_deletion(call.message.chat.id,
+                                         f"Сейчас в базе данных: {col} пользователей зарегистрировано")
 
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
@@ -1085,8 +1114,6 @@ async def get_user_info(call):
     finally:
         if conn:
             conn.close()
-
-
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "change_col_ref_buy")
@@ -1120,6 +1147,7 @@ async def change_col_ref_start(call: types.CallbackQuery):
     admin_sms[user_id] = "change_col_ref_start"  # Устанавливаем текущую задачу
     await send_message_with_deletion(call.message.chat.id, "Введите имя пользователя человека без @:")
 
+
 @bot.callback_query_handler(func=lambda call: call.data == "ask_to_change")
 async def ask_to_change(call: types.CallbackQuery):
     """Запрос на добавление дней всем пользователям."""
@@ -1127,20 +1155,26 @@ async def ask_to_change(call: types.CallbackQuery):
     admin_sms[user_id] = "ask_to_change"  # Устанавливаем текущую задачу
     await send_message_with_deletion(call.message.chat.id, "Введите имя пользователя человека без @:")
 
-#Добавление дней всем пользователям ---
+
+# Добавление дней всем пользователям ---
 @bot.callback_query_handler(func=lambda call: call.data == "add_days_to_all")
 async def start_add_days_to_all(call: types.CallbackQuery):
     """Запрос на добавление дней всем пользователям."""
     user_id = call.from_user.id
     admin_sms[user_id] = "add_days_to_all"  # Устанавливаем текущую задачу
-    await send_message_with_deletion(call.message.chat.id, "Введите количество дней, которые нужно добавить всем пользователям:")
-#По юзер нейму изнать айди--
+    await send_message_with_deletion(call.message.chat.id,
+                                     "Введите количество дней, которые нужно добавить всем пользователям:")
+
+
+# По юзер нейму изнать айди--
 @bot.callback_query_handler(func=lambda call: call.data == "get_tg_id")
 async def start_add_days_to_all(call: types.CallbackQuery):
     """Запрос на добавление дней всем пользователям."""
     user_id = call.from_user.id
     admin_sms[user_id] = "get_tgid"  # Устанавливаем текущую задачу
     await send_message_with_deletion(call.message.chat.id, "Введите username без @:")
+
+
 # --- Получение информации о пользователе ---
 @bot.callback_query_handler(func=lambda call: call.data == "get_user_info")
 async def get_user_info(call: types.CallbackQuery):
@@ -1149,13 +1183,16 @@ async def get_user_info(call: types.CallbackQuery):
     admin_sms[user_id] = "get_inf"  # Устанавливаем текущий действие
     await send_message_with_deletion(call.message.chat.id, "Введите Telegram ID пользователя, чтобы получить данные:")
 
+
 # --- Изменение данных пользователя ---
 @bot.callback_query_handler(func=lambda call: call.data == "edit_user_data")
 async def edit_user_data(call: types.CallbackQuery):
     """Запрос на изменение данных пользователя."""
     user_id = call.from_user.id
     admin_sms[user_id] = "edit_inf"  # Устанавливаем текущую задачу
-    await send_message_with_deletion(call.message.chat.id, "Введите Telegram ID пользователя, данные которого вы хотите изменить:")
+    await send_message_with_deletion(call.message.chat.id,
+                                     "Введите Telegram ID пользователя, данные которого вы хотите изменить:")
+
 
 # --- Массовая рассылка ---
 @bot.callback_query_handler(func=lambda call: call.data == "mass_message")
@@ -1164,6 +1201,7 @@ async def mass_message(call: types.CallbackQuery):
     user_id = call.from_user.id
     admin_sms[user_id] = "mass_mes"  # Устанавливаем текущую задачу
     await send_message_with_deletion(call.message.chat.id, "Введите сообщение для массовой рассылки:")
+
 
 # --- Обработчик текстовых сообщений ---
 @bot.message_handler(func=lambda message: message.from_user.id in ADMIN_IDS)
@@ -1238,7 +1276,7 @@ async def handle_admin_action(message: types.Message):
         del admin_sms[user_id]
     elif current_action == "ask_to_change":
         target_user_name = message.text.strip()
-        target_user_id=await get_telegram_id_by_username(target_user_name)
+        target_user_id = await get_telegram_id_by_username(target_user_name)
         if not await check_user_exists(target_user_id):
             await send_message_with_deletion(
                 message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
@@ -1251,7 +1289,7 @@ async def handle_admin_action(message: types.Message):
 
     elif current_action == "get_payment_col":
         target_user_name = message.text.strip()
-        target_user_id=await get_telegram_id_by_username(target_user_name)
+        target_user_id = await get_telegram_id_by_username(target_user_name)
         if not await check_user_exists(target_user_id):
             await send_message_with_deletion(
                 message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
@@ -1265,7 +1303,7 @@ async def handle_admin_action(message: types.Message):
 
     elif current_action == "change_all_pay":
         target_user_name = message.text.strip()
-        target_user_id=await get_telegram_id_by_username(target_user_name)
+        target_user_id = await get_telegram_id_by_username(target_user_name)
         if not await check_user_exists(target_user_id):
             await send_message_with_deletion(
                 message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
@@ -1275,7 +1313,8 @@ async def handle_admin_action(message: types.Message):
             ans = await get_all_pay(target_user_id)
             ans1 = await get_renewal_amount(target_user_id)
             await send_message_with_deletion(
-                message.chat.id, f"Текущая сумма выплат: {ans}. На балансе пользователя: {ans1} Введите новую сумму выплат c учетом уже текущий(текущая + то, что выплатили сейчас):"
+                message.chat.id,
+                f"Текущая сумма выплат: {ans}. На балансе пользователя: {ans1} Введите новую сумму выплат c учетом уже текущий(текущая + то, что выплатили сейчас):"
             )
 
 
@@ -1294,7 +1333,7 @@ async def handle_admin_action(message: types.Message):
             )
     elif current_action == "change_col_ref_start":
         target_user_name = message.text.strip()
-        target_user_id=await get_telegram_id_by_username(target_user_name)
+        target_user_id = await get_telegram_id_by_username(target_user_name)
         if not await check_user_exists(target_user_id):
             await bot.send_message(
                 message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
@@ -1307,7 +1346,7 @@ async def handle_admin_action(message: types.Message):
             )
     elif current_action == "change_col_ref_buy":
         target_user_name = message.text.strip()
-        target_user_id=await get_telegram_id_by_username(target_user_name)
+        target_user_id = await get_telegram_id_by_username(target_user_name)
         if not await check_user_exists(target_user_id):
             await bot.send_message(
                 message.chat.id, f"❌ Пользователь с ID {target_user_id} не найден."
@@ -1357,7 +1396,8 @@ async def handle_admin_action(message: types.Message):
                     parse_mode='HTML'
                 )
             else:
-                await send_message_with_deletion( message.chat.id,f"❌ Пользователь с username @{username} не найден в базе данных.")
+                await send_message_with_deletion(message.chat.id,
+                                                 f"❌ Пользователь с username @{username} не найден в базе данных.")
         except sqlite3.Error as e:
             await send_message_with_deletion(message.chat.id, f"❌ Произошла ошибка при поиске пользователя: {e}")
         finally:
@@ -1384,7 +1424,7 @@ async def handle_admin_action(message: types.Message):
         try:
             days_to_change = int(message.text.strip())
             target_user_id = current_action["target_user_id"]
-            await update_referral_in(target_user_id,days_to_change)
+            await update_referral_in(target_user_id, days_to_change)
             await send_message_with_deletion(
                 message.chat.id,
                 f"✅ Пользователю {target_user_id} изменено {days_to_change}.",
@@ -1398,7 +1438,7 @@ async def handle_admin_action(message: types.Message):
             sum = int(message.text.strip())
             target_user_id = current_action["target_user_id"]
             cur_bal = await get_renewal_amount(target_user_id)
-            await update_all_pay(target_user_id,sum)
+            await update_all_pay(target_user_id, sum)
             await send_message_with_deletion(
                 message.chat.id,
                 f"✅ Пользователю {target_user_id} изменена общая сумма выплат на {sum}.",
@@ -1411,7 +1451,7 @@ async def handle_admin_action(message: types.Message):
         try:
             days_to_change = int(message.text.strip())
             target_user_id = current_action["target_user_id"]
-            await update_referral_count(target_user_id,days_to_change)
+            await update_referral_count(target_user_id, days_to_change)
             await send_message_with_deletion(
                 message.chat.id,
                 f"✅ Пользователю {target_user_id} изменено.",
@@ -1508,16 +1548,14 @@ async def backup_database(call: types.CallbackQuery):
         )
 
 
-
-
-
-#Проверка базы данных на окончание срока подписки
+# Проверка базы данных на окончание срока подписки
 async def check_subscriptions_and_remove_expired():
     try:
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
         # Проверка истёкших подписок
-        cursor.execute("SELECT device_uuid, device_type, subscription_end_time, telegram_id FROM user_devices WHERE is_paid != 0")
+        cursor.execute(
+            "SELECT device_uuid, device_type, subscription_end_time, telegram_id FROM user_devices WHERE is_paid != 0")
         devices = cursor.fetchall()
         conn.close()
         now = datetime.now()
@@ -1535,24 +1573,25 @@ async def check_subscriptions_and_remove_expired():
                     await remove_uuid_from_config(device_uuid)
                     await update_device_status(device_uuid, False, None)
                     await bot.send_photo(chat_id=telegram_id,
-                        photo="https://sun9-71.userapi.com/impg/8ABTe0umB9KNVsrHq39a6LTnnUWNbRSPWjYQPQ/eOPs9y2GmWs.jpg?size=604x581&quality=95&sign=d053ad5ba398d7c28905a17f9cfa67cf&type=album",  # Замените на URL вашей картинки
-                        caption=f"""Ваша подписка истекла.\n Мы заметили, что ваша подписка истекла, а значит:
+                                         photo="https://sun9-71.userapi.com/impg/8ABTe0umB9KNVsrHq39a6LTnnUWNbRSPWjYQPQ/eOPs9y2GmWs.jpg?size=604x581&quality=95&sign=d053ad5ba398d7c28905a17f9cfa67cf&type=album",
+                                         # Замените на URL вашей картинки
+                                         caption=f"""Ваша подписка истекла.\n Мы заметили, что ваша подписка истекла, а значит:
 ❌ Блокировки сайтов и соцсетей снова работают против вас
 ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
 ❌ Ваши данные без защиты в открытых сетях
 
-⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
+⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""", reply_markup=markup)
 
                 elif days_left == 1:
                     await bot.send_photo(chat_id=telegram_id,
-                                     photo="https://i.ytimg.com/vi/hDbmmBaokeo/maxresdefault.jpg",
-                                     # Замените на URL вашей картинки
-                                     caption=f"""Ваша подписка закончится через 1 день.\n Мы заметили, что ваша подписка скоро истечет, а значит:
+                                         photo="https://i.ytimg.com/vi/hDbmmBaokeo/maxresdefault.jpg",
+                                         # Замените на URL вашей картинки
+                                         caption=f"""Ваша подписка закончится через 1 день.\n Мы заметили, что ваша подписка скоро истечет, а значит:
                     ❌ Блокировки сайтов и соцсетей снова работают против вас
                     ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
                     ❌ Ваши данные без защиты в открытых сетях
 
-                    ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
+                    ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""", reply_markup=markup)
 
                 elif days_left == 3:
                     await bot.send_photo(chat_id=telegram_id,
@@ -1563,7 +1602,8 @@ async def check_subscriptions_and_remove_expired():
                                        ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
                                        ❌ Ваши данные без защиты в открытых сетях
 
-                                       ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",reply_markup=markup)
+                                       ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",
+                                         reply_markup=markup)
             elif subscription_end_time:
                 expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
                 future_date = now
@@ -1581,9 +1621,13 @@ async def check_subscriptions_and_remove_expired():
             print(f"Ошибка API Telegram: {e}")
 
 
+<<<<<<< HEAD
 
 
 #получить топ 10 рефералов
+=======
+# получить топ 10 рефералов
+>>>>>>> ee484a6 (dc)
 async def get_top_10_referrers():
     conn = None
     try:
@@ -1608,7 +1652,6 @@ async def get_top_10_referrers():
         """)
 
         results = cursor.fetchall()
-
 
         return [
             {
@@ -1635,14 +1678,16 @@ async def start_scheduler():
     scheduler.add_job(check_subscriptions_and_remove_expired, 'interval', hours=24)
     scheduler.start()
     print("Планировщик подписок запущен.")
-    #fmf
+    # fmf
+
+
 async def main():
     await setup_menu()  # Настраиваем команды бота
-    #await update_referral_in(1568939620,2)
-    #await update_referral_in(851394287, 1)
-    #await update_database_schema()
-    #await update_device_status("4a96be34-251e-4712-a93b-d3c7dbecaeaa",False,None)
-    #await create_database()  # Создаём базу данных
+    # await update_referral_in(1568939620,2)
+    # await update_referral_in(851394287, 1)
+    # await update_database_schema()
+    # await update_device_status("4a96be34-251e-4712-a93b-d3c7dbecaeaa",False,None)
+    # await create_database()  # Создаём базу данных
     await start_scheduler()  #
     await bot.polling(none_stop=True)
 
