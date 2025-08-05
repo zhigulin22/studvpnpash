@@ -36,15 +36,12 @@ from update_schema import update_database_schema
 # logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
 TELEGRAM_TOKEN = '8331624604:AAH1sBO4tvHGdGgSs7z6S6xpVGTQxnTPWM4'
-<<<<<<< HEAD
 ADMIN_IDS = [5510185795,851394287]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
-=======
 ADMIN_IDS = [5510185795, 851394287]
 # 8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 # 7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
->>>>>>> ee484a6 (dc)
 SERVER_IP = '213.165.37.141'
 DATABASE_FILE = "vpn5_keys.db"
 SERVER_PORT = 443  # Обычно 22 для SSH
@@ -615,30 +612,23 @@ async def choose_subscription_duration_mounth(call):
 #     await send_message_with_deletion(my_yser_id, "👇 Выберите устройство, для которого хотите поменять свой ключ:", markup)
 
 
-<<<<<<< HEAD
-
 
 @bot.callback_query_handler(func=lambda call: call.data == "change_link")
 async def change_link(call):
     print(1)
     target_user_id=call.from_user.id
-=======
 @bot.callback_query_handler(func=lambda call: call.data == "change_link")
 async def change_link(call):
     print(1)
     target_user_id = call.from_user.id
->>>>>>> ee484a6 (dc)
     device = "iPhone"
     # user_id=call.from_user.id
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button1)
     fl = 1
-<<<<<<< HEAD
     cur_status_device=await get_device_payment_status(target_user_id,device)
-=======
     cur_status_device = await get_device_payment_status(target_user_id, device)
->>>>>>> ee484a6 (dc)
     if cur_status_device is True:
         cur_device_uuid = await get_device_uuid(target_user_id, device)
         await remove_uuid_from_config(cur_device_uuid)
@@ -650,17 +640,10 @@ async def change_link(call):
         new_link = await get_vless_link(target_user_id, device)
         user_endtime_device = await get_device_subscription_end_time(target_user_id, device)
         user_endtime_device_str = await format_subscription_end_time(str(user_endtime_device))
-<<<<<<< HEAD
         await bot.send_message(target_user_id,f"```{new_link}```",parse_mode='MarkdownV2')
     else:
         print(1)
         await send_message_with_deletion(target_user_id,f"У вас нет активного ключа, купите его",reply_markup=markup)
-=======
-        await bot.send_message(target_user_id, f"```{new_link}```", parse_mode='MarkdownV2')
-    else:
-        print(1)
-        await send_message_with_deletion(target_user_id, f"У вас нет активного ключа, купите его", reply_markup=markup)
->>>>>>> ee484a6 (dc)
 
 
 # Обработчик команды "Назад"
@@ -695,11 +678,8 @@ async def back_to_main_menu(call):
     markup.add(button3, button5)
     markup.add(button4, button6)
     markup.add(button7)
-<<<<<<< HEAD
     await send_message_with_deletion(call.message.chat.id,welcome_message, markup)
-=======
-    await send_message_with_deletion(call.message.chat.id, welcome_message, markup)
->>>>>>> ee484a6 (dc)
+
 
 
 # Узнать свой ВПН
@@ -1621,13 +1601,10 @@ async def check_subscriptions_and_remove_expired():
             print(f"Ошибка API Telegram: {e}")
 
 
-<<<<<<< HEAD
 
 
 #получить топ 10 рефералов
-=======
 # получить топ 10 рефералов
->>>>>>> ee484a6 (dc)
 async def get_top_10_referrers():
     conn = None
     try:
