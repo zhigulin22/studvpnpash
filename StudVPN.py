@@ -248,7 +248,7 @@ async def user_has_registered_in_bot(user_id):
 async def start(message):
     user_name = message.from_user.first_name
     welcome_message = (
-        f"""{user_name}, 🚀 Добро пожаловать в GUP VPN – ваш надёжный и быстрый VPN!
+        f"""{user_name}, 🚀 Добро пожаловать в HugVPN – ваш надёжный и быстрый VPN!
 
 🔒 Полная анонимность и защита данных
 ⚡ Максимальная скорость без ограничений
@@ -404,8 +404,8 @@ async def buy_vpn(call):
 - Защищать свои данные от посторонних глаз с помощью современных технологий шифрования.
 - Экономить время — настройка занимает всего пару кликов, а после первого подключения нужно будет просто нажимать 1 кнопку!
 
-Почему выбирают GUP VPN?
-💰 Один из самых дешевых тарифов (5 рубля/день)
+Почему выбирают HugVPN?
+💰 Один из самых дешевых тарифов (2.5 рубля/день)
 🚀 Высокая скорость: никаких тормозов, только комфортный серфинг.
 🔒 Безопасность: ваши данные всегда под защитой.
 🌍 Глобальность: расширяем сеть серверов постоянно .
@@ -469,10 +469,10 @@ async def buy_vpn(call):
                                          markup)
     else:
         markup = types.InlineKeyboardMarkup()
-        button1 = types.InlineKeyboardButton("- 1 месяц - 199₽", callback_data=f'1month1|{device}')
-        button2 = types.InlineKeyboardButton("- 3 месяца - 510₽ (-15%)", callback_data=f'3month1|{device}')
-        button3 = types.InlineKeyboardButton("- 6 месяцев - 960₽ (-20%)", callback_data=f'6month1|{device}')
-        button4 = types.InlineKeyboardButton("- 12 месяцев - 1799₽ (-25%)", callback_data=f'12month1|{device}')
+        button1 = types.InlineKeyboardButton("- 1 месяц - 99₽", callback_data=f'1month1|{device}')
+        button2 = types.InlineKeyboardButton("- 3 месяца - 255₽ (-15%)", callback_data=f'3month1|{device}')
+        button3 = types.InlineKeyboardButton("- 6 месяцев - 480₽ (-20%)", callback_data=f'6month1|{device}')
+        button4 = types.InlineKeyboardButton("- 12 месяцев - 999₽ (-25%)", callback_data=f'12month1|{device}')
         button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
         markup.add(button1)
         markup.add(button2)
@@ -498,19 +498,19 @@ async def choose_subscription_duration_mounth(call):
     sub = ""
     if subscription_duration == "1month1":
         cur_time = 31
-        amount = 199
+        amount = 99
         sub = "1 месяц"
     elif subscription_duration == "3month1":
         cur_time = 91
-        amount = 510
+        amount = 255
         sub = "3 месяца"
     elif subscription_duration == "6month1":
         cur_time = 181
-        amount = 960
+        amount = 480
         sub = "6 месяцев"
     elif subscription_duration == "12month1":
         cur_time = 361
-        amount = 1799
+        amount = 899
         sub = "12 месяцев"
     user_status_device = await get_device_payment_status(user_id, device)
     markup1 = types.InlineKeyboardMarkup()
@@ -668,7 +668,7 @@ async def change_link(call):
 async def back_to_main_menu(call):
     user_name = call.from_user.first_name
     welcome_message = (
-        f"""{user_name}, 🚀 Добро пожаловать в GUP VPN – ваш надёжный и быстрый VPN!
+        f"""{user_name}, 🚀 Добро пожаловать в HugVPN – ваш надёжный и быстрый VPN!
 
 🔒 Полная анонимность и защита данных
 ⚡ Максимальная скорость без ограничений
@@ -777,10 +777,10 @@ async def phone_to_proceed(call):
     user_status_device = await get_device_payment_status(user_id, device)
     if user_status_device is True:
         markup = types.InlineKeyboardMarkup()
-        button1 = types.InlineKeyboardButton("- 1 месяц - 199₽", callback_data=f'1month2|{device}')
-        button2 = types.InlineKeyboardButton("- 3 месяца - 510₽ (-15%)", callback_data=f'3month2|{device}')
-        button3 = types.InlineKeyboardButton("- 6 месяцев - 960₽ (-20%)", callback_data=f'6month2|{device}')
-        button4 = types.InlineKeyboardButton("- 12 месяцев - 1799₽ (-25%)", callback_data=f'12month2|{device}')
+        button1 = types.InlineKeyboardButton("- 1 месяц - 99₽", callback_data=f'1month2|{device}')
+        button2 = types.InlineKeyboardButton("- 3 месяца - 255₽ (-15%)", callback_data=f'3month2|{device}')
+        button3 = types.InlineKeyboardButton("- 6 месяцев - 480₽ (-20%)", callback_data=f'6month2|{device}')
+        button4 = types.InlineKeyboardButton("- 12 месяцев - 899₽ (-25%)", callback_data=f'12month2|{device}')
         button5 = types.InlineKeyboardButton("🏠Главное меню", callback_data='main_menu')
         markup.add(button1)
         markup.add(button2)
@@ -841,19 +841,19 @@ async def pay_to_proceed(call):
     sub = ""
     if subscription_duration == "1month2":
         cur_time = 31
-        amount = 199
+        amount = 99
         sub = "1 месяц"
     elif subscription_duration == "3month2":
         cur_time = 91
-        amount = 510
+        amount = 255
         sub = "3 месяца"
     elif subscription_duration == "6month2":
         cur_time = 181
-        amount = 960
+        amount = 480
         sub = "6 месяцев"
     elif subscription_duration == "12month2":
         cur_time = 361
-        amount = 1799
+        amount = 899
         sub = "12 месяцев"
     user_status_device = await get_device_payment_status(user_id, device)
     markup1 = types.InlineKeyboardMarkup()
@@ -1033,7 +1033,7 @@ async def help_command(message):
 Таблица топов по рефералам обновляется каждые 20 минут. Если и после этого срока начисление не учтено, напишите нам.
 👨‍🔧 Если вопрос по другой теме, задайте его, и вам ответит первый освободившийся администратор 🔧
 
-@GUPVPN_Support
+@HugVPN_Support
     """)
 
 
