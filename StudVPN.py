@@ -27,7 +27,7 @@ from database_utils import create_database,add_raffle_tickets,get_all_pay,update
 from update_schema import update_database_schema
 #logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
-TELEGRAM_TOKEN = '8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E'
+TELEGRAM_TOKEN = '8287195819:AAEKmhg8bCMMlRtjlM5Q6FH8GW03VEPvvP8'
 ADMIN_IDS = [5510185795,1120515812,851394287]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
