@@ -143,7 +143,6 @@ async def update_config_on_server(new_uuid):
 
             # Открываем SFTP-сессию
             async with ssh.start_sftp_client() as sftp:
-                # Читаем конфиг
                 async with sftp.open(CONFIG_FILE_PATH, 'r') as config_file:
                     content = await config_file.read()
                     config = json.loads(content)
