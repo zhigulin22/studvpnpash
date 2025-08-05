@@ -928,7 +928,7 @@ async def pay_to_proceed(call):
 @bot.callback_query_handler(func=lambda call: call.data == "referral")
 async def referral_program(call):
     user_name = call.from_user.id
-    referral_link = f"https://t.me/HugVPN_bot?start={user_name}"
+    referral_link = f"https://t.me/GUPVPN_bot?start={user_name}"
     markup = types.InlineKeyboardMarkup()
     button1 = types.InlineKeyboardButton("👉 Узнать свою статистику", callback_data='col_ref')
     button2 = types.InlineKeyboardButton("🌟 Топ 10 амбасадоров", callback_data='top_ref')
