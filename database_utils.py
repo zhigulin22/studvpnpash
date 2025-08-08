@@ -964,7 +964,8 @@ async def get_all_users():
 
 
 async def main():
-    #await delete_user(5510185795)
+    await delete_user(5510185795)
+    await delete_user(5367178846)
     #await update_flag(5510185795,1)
     #await create_database()
     all_users = await get_all_users()

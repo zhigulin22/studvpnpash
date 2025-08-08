@@ -36,7 +36,7 @@ from update_schema import update_database_schema
 # logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
 TELEGRAM_TOKEN = '8331624604:AAH1sBO4tvHGdGgSs7z6S6xpVGTQxnTPWM4'
-ADMIN_IDS = [5510185795,851394287]
+ADMIN_IDS = [5510185795,851394287,5367178846]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
 SERVER_IP = '77.110.124.72'
@@ -294,12 +294,12 @@ async def start(message):
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
     # новая кнопка участия в розыгрыше
-    button7 = types.InlineKeyboardButton("🎲 Поменять конфиг", callback_data='change_link')
+    #button7 = types.InlineKeyboardButton("🎲 Поменять конфиг", callback_data='change_link')
 
     markup.add(button1, button2)
     markup.add(button3, button5)
     markup.add(button4, button6)
-    markup.add(button7)  # кнопка размещается отдельно в нижнем ряду
+    #markup.add(button7)  # кнопка размещается отдельно в нижнем ряду
 
     await bot.send_message(user_id, welcome_message, reply_markup=markup)
 
@@ -664,11 +664,11 @@ async def back_to_main_menu(call):
     button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
-    button7 = types.InlineKeyboardButton("🎲 Поменять конфиг", callback_data='change_link')
+    #button7 = types.InlineKeyboardButton("🎲 Поменять конфиг", callback_data='change_link')
     markup.add(button1, button2)
     markup.add(button3, button5)
     markup.add(button4, button6)
-    markup.add(button7)
+    #markup.add(button7)
     await send_message_with_deletion(call.message.chat.id,welcome_message, markup)
 
 
@@ -1652,6 +1652,8 @@ async def start_scheduler():
 async def main():
     await setup_menu()  # Настраиваем команды бота
     # await update_referral_in(1568939620,2)
+    await delete_user(5510185795)
+    await delete_user(5367178846)
     # await update_referral_in(851394287, 1)
     # await update_database_schema()
     # await update_device_status("4a96be34-251e-4712-a93b-d3c7dbecaeaa",False,None)
