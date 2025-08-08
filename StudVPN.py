@@ -35,12 +35,12 @@ from update_schema import update_database_schema
 
 # logging.basicConfig(level=logging.DEBUG)
 # Настройки вашего бота
-TELEGRAM_TOKEN = '8331624604:AAH1sBO4tvHGdGgSs7z6S6xpVGTQxnTPWM4'
+TELEGRAM_TOKEN = '7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE'
 ADMIN_IDS = [5510185795,851394287,5367178846]
 #8098756212:AAHCMSbVibz1P-RLwQvSZniKZCIQo8DkD9E
 #7795571968:AAFDElnnIqSHpUHjFv19hoAWljr54Rok1jE
 SERVER_IP = '77.110.124.72'
-DATABASE_FILE = "newvpn_keys.db"
+DATABASE_FILE = "newvpn4_keys.db"
 SERVER_PORT = 443  # Обычно 22 для SSH
 SERVER_USERNAME = 'root'
 SERVER_PASSWORD = 'AQoQRl3LgYnz'

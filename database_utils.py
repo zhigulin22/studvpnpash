@@ -4,7 +4,7 @@ import uuid
 import os  # Import the 'os' module
 import asyncio
 
-DATABASE_FILE = "newvpn_keys.db"
+DATABASE_FILE = "newvpn4_keys.db"
 DEVICE_LIMIT = 4  # Maximum number of devices per user
 ALLOWED_DEVICE_TYPES = ["iPhone", "Mac", "Android", "Windows"]
 
