@@ -1,6 +1,6 @@
 import sqlite3
 import asyncio, asyncssh
-DATABASE_FILE = "vpn5_keys.db"
+DATABASE_FILE = "newvpn4_keys.db"
 
 async def update_database_schema():
     """Updates the database schema to add new columns and modify existing ones."""
