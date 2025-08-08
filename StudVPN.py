@@ -1652,8 +1652,8 @@ async def start_scheduler():
 async def main():
     await setup_menu()  # Настраиваем команды бота
     # await update_referral_in(1568939620,2)
-    await delete_user(5510185795)
-    await delete_user(5367178846)
+    #await delete_user(5510185795)
+    #await delete_user(5367178846)
     # await update_referral_in(851394287, 1)
     # await update_database_schema()
     # await update_device_status("4a96be34-251e-4712-a93b-d3c7dbecaeaa",False,None)
