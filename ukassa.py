@@ -3,11 +3,11 @@ import uuid
 from yookassa import Configuration, Payment
 
 # Данные ЮKassa
-Configuration.account_id = '1138707'    # например, "1020973"
-Configuration.secret_key = 'test_3g5JBlYb9jHc4ams-f5SdeY3ocLP1ZbHJhJzEis05_E'
+Configuration.account_id = '1140047'    # например, "1020973"
+Configuration.secret_key = 'live_dC1cVn8cyEcmSjW5W0wJ4d8dOdtWegXRj-eoGwqxpJc'
 "live_FosI0F8F_OqOHsJM4tiWtCfPBSZAVGma8J90WRRK7Ks"
-SHOP_ID = '1138707'
-API_KEY = 'test_3g5JBlYb9jHc4ams-f5SdeY3ocLP1ZbHJhJzEis05_E'
+SHOP_ID = '1140047'
+API_KEY = 'live_dC1cVn8cyEcmSjW5W0wJ4d8dOdtWegXRj-eoGwqxpJc'
 RETURN_URL = 'https://t.me/HugVPN_bot'
 
 async def create_payment(amount, description, email=None):
