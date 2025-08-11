@@ -2,7 +2,6 @@ import requests
 import uuid
 from yookassa import Configuration, Payment
 
-# Данные ЮKassa
 Configuration.account_id = '1140047'    # например, "1020973"
 Configuration.secret_key = 'live_dC1cVn8cyEcmSjW5W0wJ4d8dOdtWegXRj-eoGwqxpJc'
 "live_FosI0F8F_OqOHsJM4tiWtCfPBSZAVGma8J90WRRK7Ks"
