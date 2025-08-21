@@ -23,7 +23,7 @@ import asyncio, asyncssh
 
 logging.getLogger('asyncssh').setLevel(logging.WARNING)
 from telebot import types
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from database_utils import create_database, add_raffle_tickets, get_all_pay, update_all_pay, get_raffle_tickets, \
     update_purchase_amount, update_renewal_amount, update_flag, get_purchase_amount, get_renewal_amount, get_flag, \
     get_username, update_username, get_telegram_id_by_username, update_referral_in, get_referral_in_count, \
@@ -290,7 +290,7 @@ async def start(message):
     button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
     button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
     button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
-    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
+    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/gupvpnsupport")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
     # новая кнопка участия в розыгрыше
@@ -385,9 +385,9 @@ async def join_raffle(call):
 @bot.callback_query_handler(func=lambda call: call.data == "service")
 async def buy_vpn(call):
     markup = types.InlineKeyboardMarkup()
-    button1 = types.InlineKeyboardButton("📒 Отзывы", url="https://t.me/HugVPN/54")
+    #button1 = types.InlineKeyboardButton("📒 Отзывы", url="https://t.me/HugVPN/54")
     button2 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
-    markup.add(button1)
+    #markup.add(button1)
     markup.add(button2)
     welcome_message = (
         """
@@ -414,10 +414,10 @@ async def buy_vpn(call):
 @bot.callback_query_handler(func=lambda call: call.data == "instruction")
 async def buy_vpn(call):
     markup = types.InlineKeyboardMarkup()
-    button1 = types.InlineKeyboardButton("📱 iPhone", url='https://t.me/HugVPN/41')
-    button2 = types.InlineKeyboardButton("📲 Android", url='https://t.me/HugVPN/42')
-    button3 = types.InlineKeyboardButton("💻 Mac", url='https://t.me/HugVPN/43')
-    button4 = types.InlineKeyboardButton("🖥️ Windows", url='https://t.me/HugVPN/45')
+    button1 = types.InlineKeyboardButton("📱 iPhone", url='https://t.me/gupvpn/4')
+    button2 = types.InlineKeyboardButton("📲 Android", url='https://t.me/gupvpn/5')
+    button3 = types.InlineKeyboardButton("💻 Mac", url='https://t.me/gupvpn/6')
+    button4 = types.InlineKeyboardButton("🖥️ Windows", url='https://t.me/gupvpn/7')
     button5 = types.InlineKeyboardButton("🏠 Главное меню", callback_data='main_menu')
     markup.add(button1, button2)
     markup.add(button3, button4)
@@ -661,7 +661,7 @@ async def back_to_main_menu(call):
     button1 = types.InlineKeyboardButton("💰 Купить VPN", callback_data='buy_vpn')
     button2 = types.InlineKeyboardButton("💼 Мой VPN", callback_data='my_vpn')
     button3 = types.InlineKeyboardButton("🎁 Пригласить", callback_data='referral')
-    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/HugVPN_support")
+    button4 = types.InlineKeyboardButton("☎️ Поддержка", url="https://t.me/gupvpnsupport")
     button5 = types.InlineKeyboardButton("🌐 О сервисе", callback_data='service')
     button6 = types.InlineKeyboardButton("📎 Инструкции", callback_data='instruction')
     #button7 = types.InlineKeyboardButton("🎲 Поменять конфиг", callback_data='change_link')
@@ -1520,78 +1520,194 @@ async def backup_database(call: types.CallbackQuery):
 
 
 # Проверка базы данных на окончание срока подписки
+USE_UTC = True  # можно и убрать, если всегда UTC
+
+def _now() -> datetime:
+    # возвращаем TZ-aware
+    return datetime.now(timezone.utc)
+
+def _to_utc_aware(dt: datetime) -> datetime:
+    # делаем дату tz-aware и приводим к UTC
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+def _parse_dt(value) -> datetime | None:
+    """Пробуем несколько форматов и возвращаем TZ-aware UTC или None."""
+    if isinstance(value, datetime):
+        return _to_utc_aware(value)
+
+    s = str(value).strip()
+
+    # 1) Явные форматы без таймзоны
+    for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+        try:
+            return _to_utc_aware(datetime.strptime(s, fmt))
+        except ValueError:
+            pass
+
+    # 2) ISO-строка (может быть с таймзоной или без)
+    try:
+        dt = datetime.fromisoformat(s)
+        return _to_utc_aware(dt)
+    except Exception:
+        return None
+
 async def check_subscriptions_and_remove_expired():
     try:
         conn = sqlite3.connect(DATABASE_FILE)
         cursor = conn.cursor()
-        # Проверка истёкших подписок
-        cursor.execute(
-            "SELECT device_uuid, device_type, subscription_end_time, telegram_id FROM user_devices WHERE is_paid != 0")
+        # Берём только платные с указанным концом подписки
+        cursor.execute("""
+            SELECT device_uuid, device_type, subscription_end_time, telegram_id
+            FROM user_devices
+            WHERE is_paid != 0 AND subscription_end_time IS NOT NULL
+        """)
         devices = cursor.fetchall()
         conn.close()
+
         now = datetime.now()
+
         markup = types.InlineKeyboardMarkup()
-        button1 = types.InlineKeyboardButton("👉 Купить ВПН", callback_data='buy_vpn')
-        markup.add(button1)
+        markup.add(types.InlineKeyboardButton("👉 Купить ВПН", callback_data='buy_vpn'))
 
         for device_uuid, device_type, subscription_end_time, telegram_id in devices:
-            if subscription_end_time:
-                expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
-                future_date = now
-                days_left = (expiry_date - future_date).days
-                print(days_left)
-                if days_left <= 0:
+            expiry_date = _parse_dt(subscription_end_time)
+            if not expiry_date:
+                # Битая дата — пропускаем, чтобы не уронить весь проход
+                print(f"[WARN] Неверный формат даты для {device_uuid}: {subscription_end_time!r}")
+                continue
+
+            # 1) Жёсткая проверка истечения по секундам
+            if expiry_date <= now:
+                try:
                     await remove_uuid_from_config(device_uuid)
-                    await update_device_status(device_uuid, False, None)
-                    await bot.send_photo(chat_id=telegram_id,
-                                         photo="https://sun9-71.userapi.com/impg/8ABTe0umB9KNVsrHq39a6LTnnUWNbRSPWjYQPQ/eOPs9y2GmWs.jpg?size=604x581&quality=95&sign=d053ad5ba398d7c28905a17f9cfa67cf&type=album",
-                                         # Замените на URL вашей картинки
-                                         caption=f"""Ваша подписка истекла.\n Мы заметили, что ваша подписка истекла, а значит:
-❌ Блокировки сайтов и соцсетей снова работают против вас
-❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
-❌ Ваши данные без защиты в открытых сетях
+                    await update_device_status(device_uuid, False, None)  # is_paid = 0, end = NULL
+                except Exception as e:
+                    print(f"[ERROR] Не удалось деактивировать {device_uuid}: {e}")
 
-⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""", reply_markup=markup)
+                try:
+                    await bot.send_photo(
+                        chat_id=telegram_id,
+                        photo="https://sun9-71.userapi.com/impg/8ABTe0umB9KNVsrHq39a6LTnnUWNbRSPWjYQPQ/eOPs9y2GmWs.jpg?size=604x581&quality=95&sign=d053ad5ba398d7c28905a17f9cfa67cf&type=album",
+                        caption=(
+                            "Ваша подписка истекла.\nМы заметили, что ваша подписка истекла, а значит:\n"
+                            "❌ Блокировки сайтов и соцсетей снова работают против вас\n"
+                            "❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны\n"
+                            "❌ Ваши данные без защиты в открытых сетях\n\n"
+                            "⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!"
+                        ),
+                        reply_markup=markup
+                    )
+                except ApiTelegramException as e:
+                    if e.error_code == 403:
+                        print(f"[INFO] Пользователь {telegram_id} заблокировал бота.")
+                    else:
+                        print(f"[TG ERROR] {e}")
+                continue  # переходим к следующему устройству
 
-                elif days_left == 1:
-                    await bot.send_photo(chat_id=telegram_id,
-                                         photo="https://i.ytimg.com/vi/hDbmmBaokeo/maxresdefault.jpg",
-                                         # Замените на URL вашей картинки
-                                         caption=f"""Ваша подписка закончится через 1 день.\n Мы заметили, что ваша подписка скоро истечет, а значит:
-                    ❌ Блокировки сайтов и соцсетей снова работают против вас
-                    ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
-                    ❌ Ваши данные без защиты в открытых сетях
-
-                    ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""", reply_markup=markup)
-
-                elif days_left == 3:
-                    await bot.send_photo(chat_id=telegram_id,
-                                         photo="https://i.ytimg.com/vi/hDbmmBaokeo/maxresdefault.jpg",
-                                         # Замените на URL вашей картинки
-                                         caption=f"""Ваша подписка закончится через 3 дня.\n Мы заметили, что ваша подписка скоро истечет, а значит:
-                                       ❌ Блокировки сайтов и соцсетей снова работают против вас
-                                       ❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны
-                                       ❌ Ваши данные без защиты в открытых сетях
-
-                                       ⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!""",
-                                         reply_markup=markup)
-            elif subscription_end_time:
-                expiry_date = datetime.strptime(subscription_end_time, "%Y-%m-%d %H:%M:%S.%f")
-                future_date = now
-                days_left = (expiry_date - future_date).days
-                if days_left <= 0:
-                    await remove_uuid_from_config(device_uuid)
-                    await update_device_status(device_uuid, False, None)
-
-
+            # 2) Напоминания «за 3/1 день» — считаем календарные дни до даты
+            days_left = (expiry_date.date() - now.date()).days
+            if days_left in (3, 1):
+                try:
+                    msg = "3 дня" if days_left == 3 else "1 день"
+                    await bot.send_photo(
+                        chat_id=telegram_id,
+                        photo="https://i.ytimg.com/vi/hDbmmBaokeo/maxresdefault.jpg",
+                        caption=(
+                            f"Ваша подписка закончится через {msg}.\nМы заметили, что ваша подписка скоро истечет, а значит:\n"
+                            "❌ Блокировки сайтов и соцсетей снова работают против вас\n"
+                            "❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны\n"
+                            "❌ Ваши данные без защиты в открытых сетях\n\n"
+                            "⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!"
+                        ),
+                        reply_markup=markup
+                    )
+                except ApiTelegramException as e:
+                    if e.error_code == 403:
+                        print(f"[INFO] Пользователь {telegram_id} заблокировал бота.")
+                    else:
+                        print(f"[TG ERROR] {e}")
 
     except ApiTelegramException as e:
         if e.error_code == 403:
-            print(f"Ошибка: пользователь заблокировал бота.")
+            print("Ошибка: пользователь заблокировал бота.")
         else:
             print(f"Ошибка API Telegram: {e}")
+    except Exception as e:
+        # Ловим неожиданные ошибки, чтобы планировщик не падал молча
+        print(f"[FATAL] Ошибка проверки подписок: {e}")
 
+async def process_expired_subscriptions_once_and_notify():
+    """
+    Делает сразу всё:
+    - Находит все платные девайсы с истекшим сроком.
+    - Удаляет UUID из конфига.
+    - Помечает в БД как неактивные/бесплатные.
+    - Шлёт уведомления пользователям об отключении.
+    Безопасен для повторного запуска.
+    """
+    await bot.send_message(5510185795, text=f"Готовлюсь")
+    # 1) Забираем кандидатов
+    conn = sqlite3.connect(DATABASE_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT device_uuid, device_type, subscription_end_time, telegram_id
+        FROM user_devices
+        WHERE is_paid != 0 AND subscription_end_time IS NOT NULL
+    """)
+    rows = cursor.fetchall()
+    conn.close()
 
+    now = _now()
+
+    # 2) Готовим клавиатуру
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("👉 Купить ВПН", callback_data='buy_vpn'))
+
+    # 3) Проходим по всем и отключаем тех, у кого срок истёк
+    for device_uuid, device_type, end_time_raw, telegram_id in rows:
+        expiry = _parse_dt(end_time_raw)
+        if not expiry:
+            print(f"[WARN] Неверный формат даты для {device_uuid}: {end_time_raw!r}")
+            continue
+
+        now = _now()
+        if expiry <= now:
+            # — удаляем из конфига
+            try:
+                await remove_uuid_from_config(device_uuid)
+            except Exception as e:
+                print(f"[ERROR] remove_uuid_from_config({device_uuid}): {e}")
+
+            # — ставим флаги в БД (is_paid = 0, subscription_end_time = NULL)
+            try:
+                await update_device_status(device_uuid, False, None)
+            except Exception as e:
+                print(f"[ERROR] update_device_status({device_uuid}): {e}")
+
+            # — уведомляем пользователя
+            try:
+                await bot.send_photo(
+                    chat_id=telegram_id,
+                    photo="https://sun9-71.userapi.com/impg/8ABTe0umB9KNVsrHq39a6LTnnUWNbRSPWjYQPQ/eOPs9y2GmWs.jpg?size=604x581&quality=95&sign=d053ad5ba398d7c28905a17f9cfa67cf&type=album",
+                    caption=(
+                        "Ваша подписка истекла.\nМы заметили, что ваша подписка истекла, а значит:\n"
+                        "❌ Блокировки сайтов и соцсетей снова работают против вас\n"
+                        "❌ Онлайн-кинотеатры, мессенджеры и сервисы могут быть недоступны\n"
+                        "❌ Ваши данные без защиты в открытых сетях\n\n"
+                        "⚡️ Восстановите подписку прямо сейчас и снова получите интернет без границ!"
+                    ),
+                    reply_markup=markup
+                )
+                await bot.send_message(5510185795, text=f"удалил")
+            except ApiTelegramException as e:
+                if e.error_code == 403:
+                    print(f"[INFO] Пользователь {telegram_id} заблокировал бота.")
+                else:
+                    print(f"[TG ERROR] {e}")
+            except Exception as e:
+                print(f"[ERROR] send_photo({telegram_id}): {e}")
 
 
 #получить топ 10 рефералов
@@ -1657,7 +1773,8 @@ async def main():
     # await update_referral_in(851394287, 1)
     #await update_database_schema()
     # await update_device_status("4a96be34-251e-4712-a93b-d3c7dbecaeaa",False,None)
-    await create_database()  # Создаём базу данных
+    #await create_database()  # Создаём базу данных
+    #await process_expired_subscriptions_once_and_notify()
     await start_scheduler()  #
     await bot.polling(none_stop=True)
 
